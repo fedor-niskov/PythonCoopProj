@@ -88,9 +88,8 @@ class App(Tk):
 
         # добавляем меню с кнопкой очистки холста
         main_menu = Menu(self)
-        main_menu.add_cascade(
-            label='Очистить', command=lambda: self.canv.delete('all'))
-        self.config(menu=main_menu)
+        main_menu.add_command(label="Очистить", command = lambda: self.canv.delete("all"))
+        self.config(menu = main_menu)
 
         self.fig_type = 'circle'
         # None в color_pick означает, что будет выбираться автоматически
