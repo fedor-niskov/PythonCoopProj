@@ -29,51 +29,30 @@ class Color():
         
 
 
-
-class App(Tk):
-    """Главный класс приложения"""
-    def __init__(self):
-        super(App, self).__init__()
-        self.geometry("{}x{}".format(canv_size, canv_size))
-        self.title("Калейдоскоп")
-        # создаем сам холст и помещаем его в окно
-        self.canv = Canvas(self, bg='white')
-        self.canv.grid(row = 0, column = 0, sticky = "wens")
-        # чтобы занимал все окно
-        self.columnconfigure(index = 0, weight = 1)
-        self.rowconfigure(index = 0, weight = 1)
-        self.bind('<B1-Motion>', self.create_figure)
-        
-        # добавляем меню с кнопкой очистки холста
-        main_menu = Menu(self)
-        main_menu.add_cascade(label="Очистить", command = lambda: self.canv.delete("all"))
-        self.config(menu = main_menu)
-
+class Paint(Canvas):
+    """Класс виджета для рисования"""
+    def __init__(self, master=None, *ap, **an):
+        Canvas.__init__(self, master, *ap, **an)
         self.fig_type = "circle"
         # None в color_pick означает, что будет выбираться автоматически
         self.color_pick = None
         # стартовый цвет
         self.color = Color()
-        
-        # добавить меню выбора цвета и меню выбора фигуры
+        self.bind("<B1-Motion>", self.mousemove)
 
-        # центрируем окно по центру экрана
-        self.update_idletasks()
-        x = (self.winfo_screenwidth() - self.winfo_width()) / 2
-        y = (self.winfo_screenheight() - self.winfo_height()) / 2
-        self.wm_geometry("+%d+%d" % (x, y))
+    def mousemove(self, event):
+        """Обработка события движения мышки"""
+        self.create_figure(int(event.x), int(event.y))
 
-        self.mainloop()
-        
-    def create_figure(self, event):
-        """Метод, рисующий с отображением"""
+    def create_figure(self, x, y):
+        """Метод, рисующий с отображением (x, y - координаты базовой фигуры)"""
         # тут можно реализовать переключение разных фигур с помощью self.fig_type
-        
+
         # изначальные координаты кружка
-        x1 = int(event.x) - circle_size
-        x2 = int(event.x) + circle_size
-        y1 = int(event.y) - circle_size
-        y2 = int(event.y) + circle_size
+        x1 = x - circle_size
+        x2 = x + circle_size
+        y1 = y - circle_size
+        y2 = y + circle_size
 
         x_s = self.winfo_width()
         y_s = self.winfo_height()
@@ -85,18 +64,49 @@ class App(Tk):
         y_k = x_s / y_s
 
         # 8 кругов
-        self.canv.create_oval(int(y1 * y_k), int(x1 * x_k), int(y2 * y_k), int(x2 * x_k), \
+        self.create_oval(int(y1 * y_k), int(x1 * x_k), int(y2 * y_k), int(x2 * x_k), \
             fill = color, width = 0)
-        self.canv.create_oval(int((-y1 + y_s) * y_k), int(x1 * x_k), int((-y2 + y_s) * y_k), \
+        self.create_oval(int((-y1 + y_s) * y_k), int(x1 * x_k), int((-y2 + y_s) * y_k), \
             int(x2 * x_k), fill = color, width = 0)
-        self.canv.create_oval(int(y1 * y_k), int((-x1 + x_s) * x_k), int(y2 * y_k), \
+        self.create_oval(int(y1 * y_k), int((-x1 + x_s) * x_k), int(y2 * y_k), \
             int((-x2 + x_s) * x_k), fill = color, width = 0)
-        self.canv.create_oval(int((-y1 + y_s) * y_k), int((-x1 + x_s) * x_k), \
+        self.create_oval(int((-y1 + y_s) * y_k), int((-x1 + x_s) * x_k), \
             int((-y2 + y_s) * y_k), int((-x2 + x_s) * x_k), fill = color, width = 0)
-        self.canv.create_oval(x1, y1, x2, y2, fill = color, width = 0)
-        self.canv.create_oval(-x1 + x_s, -y1 + y_s, -x2 + x_s, -y2 + y_s, fill = color, width = 0)
-        self.canv.create_oval(x1, -y1 + y_s, x2, -y2 + y_s, fill = color, width = 0)
-        self.canv.create_oval(-x1 + x_s, y1, -x2 + x_s, y2, fill = color, width = 0)
+        self.create_oval(x1, y1, x2, y2, fill = color, width = 0)
+        self.create_oval(-x1 + x_s, -y1 + y_s, -x2 + x_s, -y2 + y_s, fill = color, width = 0)
+        self.create_oval(x1, -y1 + y_s, x2, -y2 + y_s, fill = color, width = 0)
+        self.create_oval(-x1 + x_s, y1, -x2 + x_s, y2, fill = color, width = 0)
+
+
+
+class App(Tk):
+    """Главный класс приложения"""
+    def __init__(self):
+        super(App, self).__init__()
+        self.geometry("{}x{}".format(canv_size, canv_size))
+        self.title("Калейдоскоп")
+        # создаем сам холст и помещаем его в окно
+        self.canv = Paint(self, bg='white')
+        self.canv.grid(row = 0, column = 0, sticky = "wens")
+        # чтобы занимал все окно
+        self.columnconfigure(index = 0, weight = 1)
+        self.rowconfigure(index = 0, weight = 1)
+        
+        # добавляем меню с кнопкой очистки холста
+        main_menu = Menu(self)
+        main_menu.add_cascade(label="Очистить", command = lambda: self.canv.delete("all"))
+        self.config(menu = main_menu)
+
+        # добавить меню выбора цвета и меню выбора фигуры
+
+        # центрируем окно по центру экрана
+        self.update_idletasks()
+        x = (self.winfo_screenwidth() - self.winfo_width()) / 2
+        y = (self.winfo_screenheight() - self.winfo_height()) / 2
+        self.wm_geometry("+%d+%d" % (x, y))
+
+        self.mainloop()
+        
 
 
 app = App()
