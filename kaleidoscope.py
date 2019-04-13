@@ -1,5 +1,6 @@
 from tkinter import *
 import random
+from math import sqrt
 
 # стартовый цвет
 r, g, b = 150, 150, 150
@@ -80,23 +81,28 @@ class App(Tk):
         color = self.color.get_code()
         self.color.randomize()
 
-        # коэффициенты растяжения для отображения относительно диагоналей
-        x_k = y_s / x_s
-        y_k = x_s / y_s
-
-        # 8 кругов
-        self.canv.create_oval(int(y1 * y_k), int(x1 * x_k), int(y2 * y_k), int(x2 * x_k), \
-            fill = color, width = 0)
-        self.canv.create_oval(int((-y1 + y_s) * y_k), int(x1 * x_k), int((-y2 + y_s) * y_k), \
-            int(x2 * x_k), fill = color, width = 0)
-        self.canv.create_oval(int(y1 * y_k), int((-x1 + x_s) * x_k), int(y2 * y_k), \
-            int((-x2 + x_s) * x_k), fill = color, width = 0)
-        self.canv.create_oval(int((-y1 + y_s) * y_k), int((-x1 + x_s) * x_k), \
-            int((-y2 + y_s) * y_k), int((-x2 + x_s) * x_k), fill = color, width = 0)
-        self.canv.create_oval(x1, y1, x2, y2, fill = color, width = 0)
-        self.canv.create_oval(-x1 + x_s, -y1 + y_s, -x2 + x_s, -y2 + y_s, fill = color, width = 0)
-        self.canv.create_oval(x1, -y1 + y_s, x2, -y2 + y_s, fill = color, width = 0)
-        self.canv.create_oval(-x1 + x_s, y1, -x2 + x_s, y2, fill = color, width = 0)
+        # масштаб - в зависимости от расстояния до центра
+        size = circle_size / (sqrt((event.x*event.x + event.y*event.y)/(canv_size*canv_size))+.1)
+        
+        # изначальные координаты кружка
+        x1 = event.x - size
+        x2 = event.x + size
+        y1 = event.y - size
+        y2 = event.y + size
+        
+        def figure_symmetry(func, y1, x1, y2, x2, color):
+            # коэффициенты растяжения для отображения относительно диагоналей
+            x_k = y_s / x_s
+            y_k = x_s / y_s
+            
+            # 8 кругов
+            for A1, A3 in [(x1, x2), (x_s - x1, x_s-x2)]:
+                for B2, B4 in [(y_s-y1, y_s-y2),(y1, y2)]:
+                    func(round(A1), round(B2), round(A3), round(B4), fill = color, width = 0)
+            for A1, A3 in [(y1 * y_k, y2 * y_k), ((-y1 + y_s) * y_k, (-y2 + y_s) * y_k)]:
+                for B2, B4 in [(x1 * x_k, x2 * x_k), ((-x1 + x_s) * x_k, (-x2 + x_s) * x_k)]:
+                    func(round(A1), round(B2), round(A3), round(B4), fill = color, width = 0)
+        figure_symmetry(self.canv.create_oval, y1, x1, y2, x2, color)
 
 
 app = App()
