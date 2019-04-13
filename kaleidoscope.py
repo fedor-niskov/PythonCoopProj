@@ -53,37 +53,53 @@ class Paint(Canvas):
         self.create_figure(int(event.x), int(event.y))
 
     def create_figure(self, x, y):
-        """Метод, рисующий с отображением (x, y - координаты базовой фигуры)"""
-        # тут можно реализовать переключение разных фигур с помощью self.fig_type
-
-        # изначальные координаты кружка
-        x1 = x - circle_size
-        x2 = x + circle_size
-        y1 = y - circle_size
-        y2 = y + circle_size
-
+        u"""Метод, рисующий с отображением (x, y - координаты базовой фигуры)"""
+        # переменные размеров окна
         x_s = self.winfo_width()
         y_s = self.winfo_height()
+
+        # изменение цвета
         color = self.color.get_code()
         self.color.randomize()
+        x0 = x - x_s/2
+        y0 = y - y_s/2
+        # масштаб - в зависимости от расстояния до центра
+        size = start_figure_size / ((
+            sqrt(x0*x0 + y0*y0)
+            / sqrt(x_s*y_s)) + 0.15)
 
-        # коэффициенты растяжения для отображения относительно диагоналей
-        x_k = y_s / x_s
-        y_k = x_s / y_s
+        # переключение разных фигур с помощью self.fig_type
+        if self.fig_type == 'triangle':
+            create_poly = self.create_polygon
+            def figure_function(x1, y1, x2, y2, fill, width):
+                # Треугольник, обращёныый углом к центру
+                x0 = (x1+x2)/2
+                rx = x0-x_s/2
+                y0 = (y1+y2)/2
+                ry = y0-y_s/2
+                diameter = abs(x2-x1)/2
+                dx = rx/(sqrt(rx*rx)+0.001) * diameter
+                dy = ry/(sqrt(ry*ry)+0.001) * diameter
+                create_poly(
+                    round(x0 - dx), round(y0 - dy),
+                    round(x0 + dx), round(y0 - dy),
+                    round(x0 - dx), round(y0 + dy),
+                    fill=fill, width=width)
+        elif self.fig_type == 'circle':
+            figure_function = self.create_oval
+        elif self.fig_type == 'square':
+            figure_function = self.create_rectangle
+        else:
+            print('Warning')
+            return None
 
-        # 8 кругов
-        self.create_oval(int(y1 * y_k), int(x1 * x_k), int(y2 * y_k), int(x2 * x_k), \
-            fill = color, width = 0)
-        self.create_oval(int((-y1 + y_s) * y_k), int(x1 * x_k), int((-y2 + y_s) * y_k), \
-            int(x2 * x_k), fill = color, width = 0)
-        self.create_oval(int(y1 * y_k), int((-x1 + x_s) * x_k), int(y2 * y_k), \
-            int((-x2 + x_s) * x_k), fill = color, width = 0)
-        self.create_oval(int((-y1 + y_s) * y_k), int((-x1 + x_s) * x_k), \
-            int((-y2 + y_s) * y_k), int((-x2 + x_s) * x_k), fill = color, width = 0)
-        self.create_oval(x1, y1, x2, y2, fill = color, width = 0)
-        self.create_oval(-x1 + x_s, -y1 + y_s, -x2 + x_s, -y2 + y_s, fill = color, width = 0)
-        self.create_oval(x1, -y1 + y_s, x2, -y2 + y_s, fill = color, width = 0)
-        self.create_oval(-x1 + x_s, y1, -x2 + x_s, y2, fill = color, width = 0)
+        # координаты фигуры
+        x1 = x - size
+        x2 = x + size
+        y1 = y - size
+        y2 = y + size
+
+        self.figure_symmetry(figure_function, y1, x1, y2, x2, x_s, y_s, color)
 
     def figure_symmetry(self, func, y1, x1, y2, x2, w, h, color):
         u"""Функция симметричного отображения относительно главных диагоналей."""
@@ -131,54 +147,6 @@ class App(Tk):
 
         self.mainloop()
 
-    def create_figure(self, event):
-        u"""Метод, рисующий с отображением."""
-        # переменные размеров окна
-        x_s = self.winfo_width()
-        y_s = self.winfo_height()
-
-        # изменение цвета
-        color = self.color.get_code()
-        self.color.randomize()
-        x0 = event.x - x_s/2
-        y0 = event.y - y_s/2
-        # масштаб - в зависимости от расстояния до центра
-        size = start_figure_size / ((
-            sqrt(x0*x0 + y0*y0)
-            / sqrt(x_s*y_s)) + 0.15)
-
-        # переключение разных фигур с помощью self.fig_type
-        if self.fig_type == 'triangle':
-            create_poly = self.canv.create_polygon
-            def figure_function(x1, y1, x2, y2, fill, width):
-                # Треугольник, обращёныый углом к центру
-                x0 = (x1+x2)/2
-                rx = x0-x_s/2
-                y0 = (y1+y2)/2
-                ry = y0-y_s/2
-                diameter = abs(x2-x1)/2
-                dx = rx/(sqrt(rx*rx)+0.001) * diameter
-                dy = ry/(sqrt(ry*ry)+0.001) * diameter
-                create_poly(
-                    round(x0 - dx), round(y0 - dy),
-                    round(x0 + dx), round(y0 - dy),
-                    round(x0 - dx), round(y0 + dy),
-                    fill=fill, width=width)
-        elif self.fig_type == 'circle':
-            figure_function = self.canv.create_oval
-        elif self.fig_type == 'square':
-            figure_function = self.canv.create_rectangle
-        else:
-            print('Warning')
-            return None
-
-        # координаты фигуры
-        x1 = event.x - size
-        x2 = event.x + size
-        y1 = event.y - size
-        y2 = event.y + size
-
-        _figure_symmetry(figure_function, y1, x1, y2, x2, x_s, y_s, color)
 
 
 if __name__ == '__main__':
