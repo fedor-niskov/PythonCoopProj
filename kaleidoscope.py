@@ -32,6 +32,56 @@ class Color():
         return res
 
 
+
+class Paint(Canvas):
+    """Класс виджета для рисования"""
+    def __init__(self, master=None, *ap, **an):
+        Canvas.__init__(self, master, *ap, **an)
+        self.fig_type = "circle"
+        # None в color_pick означает, что будет выбираться автоматически
+        self.color_pick = None
+        # стартовый цвет
+        self.color = Color()
+        self.bind("<B1-Motion>", self.mousemove)
+
+    def mousemove(self, event):
+        """Обработка события движения мышки"""
+        self.create_figure(int(event.x), int(event.y))
+
+    def create_figure(self, x, y):
+        """Метод, рисующий с отображением (x, y - координаты базовой фигуры)"""
+        # тут можно реализовать переключение разных фигур с помощью self.fig_type
+
+        # изначальные координаты кружка
+        x1 = x - circle_size
+        x2 = x + circle_size
+        y1 = y - circle_size
+        y2 = y + circle_size
+
+        x_s = self.winfo_width()
+        y_s = self.winfo_height()
+        color = self.color.get_code()
+        self.color.randomize()
+
+        # коэффициенты растяжения для отображения относительно диагоналей
+        x_k = y_s / x_s
+        y_k = x_s / y_s
+
+        # 8 кругов
+        self.create_oval(int(y1 * y_k), int(x1 * x_k), int(y2 * y_k), int(x2 * x_k), \
+            fill = color, width = 0)
+        self.create_oval(int((-y1 + y_s) * y_k), int(x1 * x_k), int((-y2 + y_s) * y_k), \
+            int(x2 * x_k), fill = color, width = 0)
+        self.create_oval(int(y1 * y_k), int((-x1 + x_s) * x_k), int(y2 * y_k), \
+            int((-x2 + x_s) * x_k), fill = color, width = 0)
+        self.create_oval(int((-y1 + y_s) * y_k), int((-x1 + x_s) * x_k), \
+            int((-y2 + y_s) * y_k), int((-x2 + x_s) * x_k), fill = color, width = 0)
+        self.create_oval(x1, y1, x2, y2, fill = color, width = 0)
+        self.create_oval(-x1 + x_s, -y1 + y_s, -x2 + x_s, -y2 + y_s, fill = color, width = 0)
+        self.create_oval(x1, -y1 + y_s, x2, -y2 + y_s, fill = color, width = 0)
+        self.create_oval(-x1 + x_s, y1, -x2 + x_s, y2, fill = color, width = 0)
+
+
 def mutate(dif, component):
     u"""Изменение одной компоненты цвета."""
     return (random.randrange(-dif, dif) + component) % 206 + 50
@@ -70,6 +120,7 @@ def _figure_symmetry(func, y1, x1, y2, x2, w, h, color):
                 fill=color, width=0)
 
 
+
 class App(Tk):
     u"""Главный класс приложения."""
 
@@ -79,24 +130,36 @@ class App(Tk):
         self.geometry('{}x{}'.format(canv_size, canv_size))
         self.title('Калейдоскоп')
         # создаем сам холст и помещаем его в окно
-        self.canv = Canvas(self, bg='white')
-        self.canv.grid(row=0, column=0, sticky='wens')
+# <<<<<<< oop_refactoring
+        self.canv = Paint(self, bg='white')
+        self.canv.grid(row = 0, column = 0, sticky = "wens")
         # чтобы занимал все окно
-        self.columnconfigure(index=0, weight=1)
-        self.rowconfigure(index=0, weight=1)
-        self.bind('<B1-Motion>', self.create_figure)
+        self.columnconfigure(index = 0, weight = 1)
+        self.rowconfigure(index = 0, weight = 1)
+        
+# =======
+#         self.canv = Canvas(self, bg='white')
+#         self.canv.grid(row=0, column=0, sticky='wens')
+#         # чтобы занимал все окно
+#         self.columnconfigure(index=0, weight=1)
+#         self.rowconfigure(index=0, weight=1)
+#         self.bind('<B1-Motion>', self.create_figure)
 
+# >>>>>>> master
         # добавляем меню с кнопкой очистки холста
         main_menu = Menu(self)
         main_menu.add_command(label="Очистить", command = lambda: self.canv.delete("all"))
         self.config(menu = main_menu)
 
-        self.fig_type = 'circle'
-        # None в color_pick означает, что будет выбираться автоматически
-        self.color_pick = None
-        # стартовый цвет
-        self.color = Color()
+# <<<<<<< oop_refactoring
+# =======
+#         self.fig_type = 'circle'
+#         # None в color_pick означает, что будет выбираться автоматически
+#         self.color_pick = None
+#         # стартовый цвет
+#         self.color = Color()
 
+# >>>>>>> master
         # добавить меню выбора цвета и меню выбора фигуры
 
         # центрируем окно по центру экрана
@@ -106,6 +169,12 @@ class App(Tk):
         self.wm_geometry('+%d+%d' % (x, y))
 
         self.mainloop()
+# <<<<<<< oop_refactoring
+        
+
+
+# app = App()
+# =======
 
     def create_figure(self, event):
         u"""Метод, рисующий с отображением."""
@@ -159,3 +228,4 @@ class App(Tk):
 
 if __name__ == '__main__':
     app = App()
+# >>>>>>> master
