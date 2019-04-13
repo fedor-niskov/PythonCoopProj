@@ -46,7 +46,7 @@ class App(Tk):
         
         # добавляем меню с кнопкой очистки холста
         main_menu = Menu(self)
-        main_menu.add_cascade(label="Очистить", command = lambda: self.canv.delete("all"))
+        main_menu.add_command(label="Очистить", command = lambda: self.canv.delete("all"))
         self.config(menu = main_menu)
 
         self.fig_type = "circle"
