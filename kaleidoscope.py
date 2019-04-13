@@ -1,44 +1,80 @@
 from tkinter import *
 import random
+from math import sqrt
 
 # стартовый цвет
 r, g, b = 150, 150, 150
-circle_size = 10
+start_figure_size = 10
 canv_size = 700
 
 
 class Color():
-    """Класс, обеспечивающий хранение цвета.
-    и выбор случайного цвета на основе текущего
-    """
+    u"""Класс, обеспечивающий хранение цвета,
+и выбор случайного цвета на основе текущего"""
 
     def __init__(self, r=150, g=150, b=150):
+        u"""Инициализация серым цветом"""
         self.r = r
         self.g = g
         self.b = b
         self.color_dif = 30
 
     def randomize(self):
-        """Получить следующий рандомный цвет."""
+        u"""Получить следующий рандомный цвет."""
         self.r = mutate(self.color_dif, self.r)
         self.g = mutate(self.color_dif, self.g)
         self.b = mutate(self.color_dif, self.b)
-        # print(self.r, self.g, self.b)
         return self
 
     def get_code(self):
+        u"""Конвертация в формат, удобный для tkinter canvas."""
         res = '#' + '%0.2X' % self.r + '%0.2X' % self.g + '%0.2X' % self.b
         return res
 
 
 def mutate(dif, component):
+    u"""Изменение одной компоненты цвета."""
     return (random.randrange(-dif, dif) + component) % 206 + 50
 
 
+def _figure_symmetry(func, y1, x1, y2, x2, w, h, color):
+    u"""Функция симметричного отображения относительно главных диагоналей."""
+    # коэффициенты растяжения для отображения относительно диагоналей
+    x_k = h / w
+    y_k = w / h
+
+    # 8 кругов
+    for A1, A3 in [
+            (x1, x2),
+            (w - x1, w-x2)
+    ]:
+        for B2, B4 in [
+                (h-y1, h-y2),
+                (y1, y2)
+        ]:
+            func(
+                round(A1), round(B2),
+                round(A3), round(B4),
+                fill=color, width=0)
+    for A1, A3 in [
+            (y1 * y_k, y2 * y_k),
+            ((h-y1) * y_k, (h-y2) * y_k)
+    ]:
+        for B2, B4 in [
+                (x1 * x_k, x2 * x_k),
+                ((w-x1) * x_k, (w-x2) * x_k)
+        ]:
+            func(
+                round(A1), round(B2),
+                round(A3), round(B4),
+                fill=color, width=0)
+
+
 class App(Tk):
-    """Главный класс приложения."""
+    u"""Главный класс приложения."""
 
     def __init__(self):
+        u"""Создание холста и запуск цикла отрисовки"""
         super(App, self).__init__()
         self.geometry('{}x{}'.format(canv_size, canv_size))
         self.title('Калейдоскоп')
@@ -73,56 +109,54 @@ class App(Tk):
         self.mainloop()
 
     def create_figure(self, event):
-        """Метод, рисующий с отображением."""
-        # тут можно реализовать переключение разных фигур с помощью self.fig_type
-
-        # изначальные координаты кружка
-        x1 = int(event.x) - circle_size
-        x2 = int(event.x) + circle_size
-        y1 = int(event.y) - circle_size
-        y2 = int(event.y) + circle_size
-
+        u"""Метод, рисующий с отображением."""
+        # переменные размеров окна
         x_s = self.winfo_width()
         y_s = self.winfo_height()
+
+        # изменение цвета
         color = self.color.get_code()
         self.color.randomize()
+        x0 = event.x - x_s/2
+        y0 = event.y - y_s/2
+        # масштаб - в зависимости от расстояния до центра
+        size = start_figure_size / ((
+            sqrt(x0*x0 + y0*y0)
+            / sqrt(x_s*y_s)) + 0.15)
 
-        # масштаб - в зависимости от квадрата расстояния до центра
-        size = circle_size / (
-            ((event.x*event.x + event.y*event.y)
-             / (canv_size*canv_size)) + 0.8)
+        # переключение разных фигур с помощью self.fig_type
+        if self.fig_type == 'triangle':
+            create_poly = self.canv.create_polygon
+            def figure_function(x1, y1, x2, y2, fill, width):
+                # Треугольник, обращёныый углом к центру
+                x0 = (x1+x2)/2
+                rx = x0-x_s/2
+                y0 = (y1+y2)/2
+                ry = y0-y_s/2
+                diameter = abs(x2-x1)/2
+                dx = rx/(sqrt(rx*rx)+0.001) * diameter
+                dy = ry/(sqrt(ry*ry)+0.001) * diameter
+                create_poly(
+                    round(x0 - dx), round(y0 - dy),
+                    round(x0 + dx), round(y0 - dy),
+                    round(x0 - dx), round(y0 + dy),
+                    fill=fill, width=width)
+        elif self.fig_type == 'circle':
+            figure_function = self.canv.create_oval
+        elif self.fig_type == 'square':
+            figure_function = self.canv.create_rectangle
+        else:
+            print('Warning')
+            return None
 
-        # изначальные координаты кружка
+        # координаты фигуры
         x1 = event.x - size
         x2 = event.x + size
         y1 = event.y - size
         y2 = event.y + size
 
-        def figure_symmetry(func, y1, x1, y2, x2, color):
-            # коэффициенты растяжения для отображения относительно диагоналей
-            x_k = y_s / x_s
-            y_k = x_s / y_s
-
-            # 8 кругов
-            for A1, A3 in [(x1, x2), (x_s - x1, x_s-x2)]:
-                for B2, B4 in [(y_s-y1, y_s-y2), (y1, y2)]:
-                    func(
-                        round(A1), round(B2),
-                        round(A3), round(B4),
-                        fill=color, width=0)
-            for A1, A3 in [
-                    (y1 * y_k, y2 * y_k),
-                    ((-y1 + y_s) * y_k, (-y2 + y_s) * y_k)
-            ]:
-                for B2, B4 in [
-                        (x1 * x_k, x2 * x_k),
-                        ((-x1 + x_s) * x_k, (-x2 + x_s) * x_k)
-                ]:
-                    func(
-                        round(A1), round(B2),
-                        round(A3), round(B4),
-                        fill=color, width=0)
-        figure_symmetry(self.canv.create_oval, y1, x1, y2, x2, color)
+        _figure_symmetry(figure_function, y1, x1, y2, x2, x_s, y_s, color)
 
 
-app = App()
+if __name__ == '__main__':
+    app = App()
