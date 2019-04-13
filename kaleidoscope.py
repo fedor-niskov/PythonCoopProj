@@ -21,7 +21,10 @@ class App(Tk):
 		self.bind('<B1-Motion>', self.create_figure)
 		self.fig_type = "circle"
 		
-		
+		# добавялем меню с кнопкой очистки холста
+		main_menu = Menu(self)
+		main_menu.add_cascade(label="Очистить", command = lambda: canv.delete("all"))
+		self.config(menu = main_menu)
 
 
 		# центрируем окно по центру экрана
