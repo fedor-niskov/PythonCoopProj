@@ -84,6 +84,19 @@ class App(Tk):
         x_k = y_s / x_s
         y_k = x_s / y_s
 
+        # 8 кругов
+        self.canv.create_oval(int(y1 * y_k), int(x1 * x_k), int(y2 * y_k), int(x2 * x_k), \
+            fill = color, width = 0)
+        self.canv.create_oval(int((-y1 + y_s) * y_k), int(x1 * x_k), int((-y2 + y_s) * y_k), \
+            int(x2 * x_k), fill = color, width = 0)
+        self.canv.create_oval(int(y1 * y_k), int((-x1 + x_s) * x_k), int(y2 * y_k), \
+            int((-x2 + x_s) * x_k), fill = color, width = 0)
+        self.canv.create_oval(int((-y1 + y_s) * y_k), int((-x1 + x_s) * x_k), \
+            int((-y2 + y_s) * y_k), int((-x2 + x_s) * x_k), fill = color, width = 0)
+        self.canv.create_oval(x1, y1, x2, y2, fill = color, width = 0)
+        self.canv.create_oval(-x1 + x_s, -y1 + y_s, -x2 + x_s, -y2 + y_s, fill = color, width = 0)
+        self.canv.create_oval(x1, -y1 + y_s, x2, -y2 + y_s, fill = color, width = 0)
+        self.canv.create_oval(-x1 + x_s, y1, -x2 + x_s, y2, fill = color, width = 0)
 
 
 app = App()
