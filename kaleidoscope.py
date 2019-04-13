@@ -19,15 +19,23 @@ class App(Tk):
 		self.columnconfigure(index = 0, weight = 1)
 		self.rowconfigure(index = 0, weight = 1)
 		self.bind('<B1-Motion>', self.create_figure)
-		self.fig_type = "circle"
 		
 		# добавялем меню с кнопкой очистки холста
 		main_menu = Menu(self)
 		main_menu.add_cascade(label="Очистить", command = lambda: canv.delete("all"))
 		self.config(menu = main_menu)
 
+		self.fig_type = "circle"
+		# None в color означает, что будет выбираться автоматически
+		self.color = None
+		# добавить меню выбора цвета и меню выбора фигуры
 
 		# центрируем окно по центру экрана
+		root.update_idletasks()
+		x = (root.winfo_screenwidth() - root.winfo_width()) / 2
+		y = (root.winfo_screenheight() - root.winfo_height()) / 2
+		root.wm_geometry("+%d+%d" % (x, y))
+
 		self.mainloop()
 		
 	def create_figure(self, event):
