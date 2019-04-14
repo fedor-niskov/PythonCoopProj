@@ -116,14 +116,31 @@ class Paint(Canvas):
         self.create_figure(int(event.x), int(event.y))
 
     def mousedown(self, event):
+        # очистка хвоста истории после undo (т.е. нельзя будет сделать его redo)
+        while self.history and self.history[-1].time > self.time:
+            self.history.pop()
+        # счёт времени
         self.time += 1
 
     def mouseup(self, event):
         pass
 
+    def undo(self):
+        if self.time > 0:
+            self.time -= 1
+        self.repaint()
+
+    def redo(self):
+        if self.history and self.history[-1].time > self.time:
+            self.time += 1
+        self.repaint()
+
     def repaint(self):
+        u"""Перерисовка картинки согласно истории"""
         self.delete("all")
         for h in self.history:
+            if h.time > self.time:
+                continue
             self.color.code = h.color
             self.color.decode()
             self.set_style(h.type)
@@ -325,6 +342,8 @@ class App(Tk):
         # добавляем кнопку очистки холста и панели выбора
         main_menu.add_command(
             label='Очистить', command=lambda: self.canv.delete('all'))
+        main_menu.add_command(label='Отменить', command=self.canv.undo)
+        main_menu.add_command(label='Повторить', command=self.canv.redo)
         main_menu.add_cascade(label='Стиль кисти', menu=brush_style)
         main_menu.add_cascade(label='Масштабирование', menu=scale_choice)
         main_menu.add_cascade(label='Палитра', menu=palette_choice)
