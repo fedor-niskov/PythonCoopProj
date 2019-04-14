@@ -62,6 +62,7 @@ class Paint(Canvas):
         self.color = Color()
         self.bind("<B1-Motion>", self.mousemove)
         self.define_pallete(self.color)
+        self.set_scale_function()
 
     def mousemove(self, event):
         """Обработка события движения мышки"""
@@ -82,9 +83,7 @@ class Paint(Canvas):
         x_center = coordX - x_size/2
         y_center = coordY - y_size/2
         # масштаб - в зависимости от расстояния до центра
-        size = start_figure_size / ((
-            sqrt(x_center*x_center + y_center*y_center)
-            / sqrt(x_size*y_size)) + 0.15)
+        size = start_figure_size * self.distance_func(x_center, y_center)
 
         # переключение разных фигур с помощью self.fig_type
         if self.fig_type == 'triangle':
@@ -92,16 +91,16 @@ class Paint(Canvas):
             def figure_function(x1, y1, x2, y2, **kwargs):
                 # Треугольник, обращённый углом к центру
                 x0 = (x1+x2)/2
-                rx = x0-x_size/2
+                rx = x0 - x_size/2
                 y0 = (y1+y2)/2
-                ry = y0-y_size/2
-                diameter = abs(x2-x1)/2
-                dx = rx/(sqrt(rx*rx)+0.001) * diameter
-                dy = ry/(sqrt(ry*ry)+0.001) * diameter
+                ry = y0 - y_size/2
+                rho = self.distance_func(rx, ry)
+                dx = rho * (x2-x1)/2
+                dy = rho * (y2-y1)/2
                 create_poly(
-                    round(x0 - dx), round(y0 - dy),
-                    round(x0 + dx), round(y0 - dy),
                     round(x0 - dx), round(y0 + dy),
+                    round(x0 + dx), round(y0 + dy),
+                    round(x0 + dx), round(y0 - dy),
                     **kwargs)
         elif self.fig_type == 'circle':
             figure_function = self.create_oval
@@ -138,7 +137,7 @@ class Paint(Canvas):
                 func(round(A1), round(B2), round(A3), round(B4), **kwargs)
 
     def define_pallete(self, index=0):
-        """Определение палитры, если возможно, её загрузка из файла"""
+        u"""Определение палитры, если возможно, её загрузка из файла"""
         from os.path import isfile
         if isfile(f"./palette{str(index)}.txt"):
             palette = []
@@ -158,7 +157,24 @@ class Paint(Canvas):
                 self.color.decode()
             self.color.palette = []
 
-
+    def set_scale_function(self, string="inverse_dist"):
+        u"""Выбор масштабирущей функции"""
+        if string=="manhatten":
+            def func(x_center, y_center):
+                rho = (abs(x_center) + abs(y_center))*8
+                screen_factor = self.winfo_width() + self.winfo_height()
+                return rho / screen_factor
+        elif string=="square_dist":
+            def func(x_center, y_center):
+                rho = x_center*x_center + y_center*y_center
+                screen_factor = self.winfo_width() * self.winfo_height() /8
+                return rho / screen_factor
+        elif string=="inverse_dist":
+            def func(x_center, y_center):
+                rho = x_center*x_center + y_center*y_center
+                screen_factor = self.winfo_width()*self.winfo_height()
+                return 1 / (sqrt(rho) / sqrt(screen_factor) + 0.15)
+        self.distance_func = func
 
 class App(Tk):
     u"""Главный класс приложения."""
@@ -177,6 +193,7 @@ class App(Tk):
 
         # добавляем главное меню
         main_menu = Menu(self)
+
 
         #меню выбора фигуры
         brush_style = Menu(main_menu)
@@ -197,10 +214,23 @@ class App(Tk):
                                    command=lambda: self.canv.define_pallete(2))
         palette_choice.add_command(label="Палитра 3",
                                    command=lambda: self.canv.define_pallete(3))
+        
+        #меню выбора масштабирования
+        scale_choice = Menu(main_menu)
+        scale_choice.add_command(
+                label="Обратное расстояние до центра",
+                command=lambda: self.canv.set_scale_function("inverse_dist"))
+        scale_choice.add_command(
+                label="Манхэттенское расстояние до центра",
+                command=lambda: self.canv.set_scale_function("manhatten"))
+        scale_choice.add_command(
+                label="Квадрат расстояния до центра",
+                command=lambda: self.canv.set_scale_function("square_dist"))
 
         #добавляем кнопку очистки холста и панели выбора
         main_menu.add_command(label="Очистить", command = lambda: self.canv.delete("all"))
         main_menu.add_cascade(label="Стиль кисти", menu=brush_style)
+        main_menu.add_cascade(label="Масштабирование", menu=scale_choice)
         main_menu.add_cascade(label="Палитра", menu=palette_choice)
         self.config(menu = main_menu)
 
