@@ -169,7 +169,12 @@ class Paint(Canvas):
                 rho = x_center*x_center + y_center*y_center
                 screen_factor = self.winfo_width() * self.winfo_height() /8
                 return rho / screen_factor
-        elif string=="inverse_dist":
+        elif string=="inv_Chebushev":
+            def func(x_center, y_center):
+                rho = min(abs(x_center),abs(y_center)) + start_figure_size
+                screen_factor = (self.winfo_width() + self.winfo_height() )/ start_figure_size
+                return screen_factor / rho
+        else: #string=="inverse_dist":
             def func(x_center, y_center):
                 rho = x_center*x_center + y_center*y_center
                 screen_factor = self.winfo_width()*self.winfo_height()
@@ -226,6 +231,9 @@ class App(Tk):
         scale_choice.add_command(
                 label="Квадрат расстояния до центра",
                 command=lambda: self.canv.set_scale_function("square_dist"))
+        scale_choice.add_command(
+                label="Гипербола",
+                command=lambda: self.canv.set_scale_function("inv_Chebushev"))
 
         #добавляем кнопку очистки холста и панели выбора
         main_menu.add_command(label="Очистить", command = lambda: self.canv.delete("all"))
