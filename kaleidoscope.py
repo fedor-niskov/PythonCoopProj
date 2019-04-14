@@ -1,6 +1,7 @@
 from tkinter import *
 import random
 from math import sqrt
+from tkinter import filedialog
 
 # стартовый цвет
 start_R, start_G, start_B = 150, 150, 150
@@ -97,7 +98,7 @@ class Paint(Canvas):
         # загрузка палитры
         self.define_pallete()
         # выбор функции масштаба
-        self.set_scale_function()
+        self.set_scale_function('const')
         # история - список из HistoryRecord
         self.history = []
         # время (каждый клик мышкой увеличивает время на 1)
@@ -133,6 +134,51 @@ class Paint(Canvas):
     def redo(self):
         if self.history and self.history[-1].time > self.time:
             self.time += 1
+        self.repaint()
+
+    def save(self):
+        u"""Сохранение картинки в файл"""
+        filename = filedialog.asksaveasfilename(
+            initialdir = "/",
+            title = "Выберите файл",
+            filetypes = (("kaleidoscope files", "*.kld"),)
+        )
+        if not filename:
+            return
+        with open(filename, "w") as f:
+            for h in self.history:
+                f.write(
+                    str(h.x) + " " +
+                    str(h.y) + " " +
+                    h.color + " " +
+                    h.type + " " +
+                    h.distance + " " +
+                    "\n")
+
+    def load(self):
+        u"""Загрузка картинки из файла"""
+        filename = filedialog.askopenfilename(
+            initialdir = "/",
+            title = "Выберите файл",
+            filetypes = (("kaleidoscope files", "*.kld"),)
+        )
+        if not filename:
+            return
+        self.history = []
+        self.time = 1
+        with open(filename, "r") as f:
+            self.history = []
+            self.time = 1
+            for l in f.readlines():
+                l = l.split()
+                self.history.append(HistoryRecord(
+                    x = float(l[0]),
+                    y = float(l[1]),
+                    color = l[2],
+                    type = l[3],
+                    distance = l[4],
+                    time = 1
+                ))
         self.repaint()
 
     def repaint(self):
@@ -274,8 +320,10 @@ class Paint(Canvas):
                 rho = x_center*x_center + y_center*y_center
                 screen_factor = self.winfo_width()*self.winfo_height()
                 return 1 / (sqrt(rho) / sqrt(screen_factor) + 0.15)
-        else:
+        elif string == "const":
             func = lambda x, y: 1
+        else:
+            print("Warning")
         self.distance_func_name = string
         self.distance_func = func
 
@@ -325,7 +373,7 @@ class App(Tk):
         scale_choice = Menu(main_menu)
         scale_choice.add_command(
             label='Константа',
-            command=lambda: self.canv.set_scale_function())
+            command=lambda: self.canv.set_scale_function('const'))
         scale_choice.add_command(
             label='Обратное расстояние до центра',
             command=lambda: self.canv.set_scale_function('inverse_dist'))
@@ -339,7 +387,17 @@ class App(Tk):
             label='Масштабирование, обратное Манхэттенскому',
             command=lambda: self.canv.set_scale_function('inv_Chebushev'))
 
+        # меню работы с файлами
+        file_menu = Menu(main_menu)
+        file_menu.add_command(
+            label='Загрузить...',
+            command=self.canv.load)
+        file_menu.add_command(
+            label='Сохранить...',
+            command=self.canv.save)
+
         # добавляем кнопку очистки холста и панели выбора
+        main_menu.add_cascade(label='Файл', menu=file_menu)
         main_menu.add_command(
             label='Очистить', command=lambda: self.canv.delete('all'))
         main_menu.add_command(label='Отменить', command=self.canv.undo)
