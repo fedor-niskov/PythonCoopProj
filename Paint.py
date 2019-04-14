@@ -116,7 +116,7 @@ class Paint(Canvas):
                         h.color + " " +
                         h.type + " " +
                         h.distance + " " +
-                        h.size + " " +
+                        str(h.size) + " " +
                         "\n")
         except BaseException:
             self.history = []
