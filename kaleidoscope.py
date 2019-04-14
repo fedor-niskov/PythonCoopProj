@@ -18,6 +18,7 @@ class Color():
         self.b = b
         self.code = '#' + '%0.2X' % self.r + '%0.2X' % self.g + '%0.2X' % self.b
         self.palette = []
+        self.grad = 0
         self.color_dif = 10
 
     def decode(self):
@@ -43,7 +44,7 @@ class Color():
         u"""Изменение одной компоненты цвета."""
         result = random.randrange(-self.color_dif, self.color_dif) + component
         if result > 255:
-            result = 512 - result
+            result = 511 - result
         elif result <= 0:
             result = 50
         return result
@@ -139,16 +140,18 @@ class Paint(Canvas):
     def define_pallete(self, index=0):
         """Определение палитры, если возможно, её загрузка из файла"""
         from os.path import isfile
-        from itertools import zip_longest, cycle
         if isfile(f"./palette{str(index)}.txt"):
             palette = []
             with open(f"./palette{str(index)}.txt") as palette_text:
                 for line in palette_text:
-                    palette.extend(
-                        ['#'+''.join(hex_code)
-                         for hex_code
-                         in zip_longest(*[iter(line)] * 6)
-                        ])
+                    count = len(line)//6
+                    for i in range(count):
+                        position = i*6
+                        palette.append('#'+line[position:position+6])
+            def cycle(palette):
+                while palette:
+                    for element in palette:
+                          yield element
             self.color.palette = cycle(palette)
         else:
             if self.color.palette:
@@ -174,7 +177,6 @@ class App(Tk):
 
         # добавляем главное меню
         main_menu = Menu(self)
-
 
         #меню выбора фигуры
         brush_style = Menu(main_menu)
