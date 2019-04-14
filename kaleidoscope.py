@@ -10,10 +10,10 @@ canv_size = 700
 
 class Color():
     u"""Класс, обеспечивающий хранение цвета,
-и выбор случайного цвета на основе текущего"""
+и выбор случайного цвета на основе текущего."""
 
     def __init__(self, r=start_R, g=start_G, b=start_B):
-        u"""Инициализация серым цветом"""
+        u"""Инициализация серым цветом."""
         self.r = r
         self.g = g
         self.b = b
@@ -23,7 +23,7 @@ class Color():
         self.color_dif = 10
 
     def decode(self):
-        u"""Декодирование послденего цвета из hex в RGB"""
+        u"""Декодирование последнего цвета из hex в RGB."""
         self.r = int(self.code[1:3], 16)
         self.g = int(self.code[3:5], 16)
         self.b = int(self.code[5:7], 16)
@@ -47,7 +47,7 @@ class Color():
         result = random.randrange(-self.color_dif, self.color_dif) + component
         if result > 255:
             result = 511 - result
-        elif result <= 0:
+        elif result <= 50:
             result = 50
         return result
 
@@ -125,8 +125,9 @@ class Paint(Canvas):
     def figure_symmetry(self, func, point1, point2, color):
         u"""Функция симметричного отображения относительно главных диагоналей."""
         # коэффициенты растяжения для отображения относительно диагоналей
-        y1, x1 = point1
-        y2, x2 = point2
+        
+        x1, y1 = point1
+        x2, y2 = point2
         x_size = self.winfo_width()
         y_size = self.winfo_height()
         x_k = y_size / x_size
