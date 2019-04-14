@@ -88,6 +88,7 @@ class Paint(Canvas):
 
     def __init__(self, master=None, *ap, **an):
         Canvas.__init__(self, master, *ap, **an)
+        self.fig_size = start_figure_size
         self.fig_type = 'circle'
         # None в color_pick означает, что будет выбираться автоматически
         self.color_pick = None
@@ -227,7 +228,7 @@ class Paint(Canvas):
         x_center = coord_x - x_size/2
         y_center = coord_y - y_size/2
         # масштаб - в зависимости от расстояния до центра
-        size = start_figure_size * self.distance_func(x_center, y_center)
+        size = self.fig_size * self.distance_func(x_center, y_center)
 
         # переключение разных фигур с помощью self.fig_type
         if self.fig_type == 'triangle':
@@ -343,6 +344,22 @@ class Paint(Canvas):
         self.distance_func = func
 
 
+class FigSizer(Toplevel):
+    u"""Окно, которое открывается для выбора размера фигуры"""
+    def __init__(self, default_size=start_figure_size):
+        Toplevel.__init__(self)
+        self.figsize = Scale(self, from_=1, to=50, orient=HORIZONTAL)
+        self.figsize.set(default_size)
+        self.figsize.pack()
+        self.button = Button(self, text='OK', command=self.quit)
+        self.button.pack()
+        self.title('Выберите размер')
+        self.protocol('WM_DELETE_WINDOW', self.quit)
+        # по центру экрана
+        x = (self.winfo_screenwidth() - self.winfo_width()) / 2
+        y = (self.winfo_screenheight() - self.winfo_height()) / 2
+        self.wm_geometry('+%d+%d' % (x, y))
+
 
 class App(Tk):
     u"""Главный класс приложения."""
@@ -419,6 +436,7 @@ class App(Tk):
         main_menu.add_cascade(label='Стиль кисти', menu=brush_style)
         main_menu.add_cascade(label='Масштабирование', menu=scale_choice)
         main_menu.add_cascade(label='Палитра', menu=palette_choice)
+        main_menu.add_command(label='Размер', command=self.select_fig_size)
         self.config(menu=main_menu)
 
         # центрируем окно по центру экрана
@@ -428,6 +446,12 @@ class App(Tk):
         self.wm_geometry('+%d+%d' % (x, y))
 
         self.mainloop()
+
+    def select_fig_size(self):
+        fs = FigSizer(self.canv.fig_size)
+        fs.mainloop()
+        self.canv.fig_size = fs.figsize.get()
+        fs.destroy()
 
 
 if __name__ == '__main__':
