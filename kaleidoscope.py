@@ -19,8 +19,8 @@ class Color():
         self.b = b
         self.code = '#' + '%0.2X' % self.r + '%0.2X' % self.g + '%0.2X' % self.b
         self.palette = []
-        self.grad = 0
         self.color_dif = 10
+        self.random_color = 1
 
     def decode(self):
         u"""Декодирование последнего цвета из hex в RGB."""
@@ -36,14 +36,19 @@ class Color():
         if self.palette:
             self.code = next(self.palette)
         else:
-            self.r = self.mutate(self.r)
-            self.g = self.mutate(self.g)
-            self.b = self.mutate(self.b)
+            if self.random_color == -1:
+                self.r = self.randomize(self.r)
+                self.g = self.randomize(self.g)
+                self.b = self.randomize(self.b)
+            elif self.random_color == -2:
+                self.r = self.mutate(self.r)
+                self.g = self.mutate(self.g)
+                self.b = self.mutate(self.b)
             self.code = '#' + '%0.2X' % self.r + '%0.2X' % self.g + '%0.2X' % self.b
         return self.code
 
     def mutate(self, component):
-        u"""Изменение одной компоненты цвета."""
+        u"""Плавное изменение одной компоненты цвета."""
         result = random.randrange(-self.color_dif, self.color_dif) + component
         if result > 255:
             result = 511 - result
@@ -51,6 +56,10 @@ class Color():
             result = 50
         return result
 
+    def randomize(self, component):
+        u"""Получить следующий рандомный цвет"""
+        result = (random.randrange(-self.color_dif, self.color_dif) + component) % 206 + 50
+        return result
 
 class Paint(Canvas):
     """Класс виджета для рисования."""
@@ -64,7 +73,7 @@ class Paint(Canvas):
         self.color = Color()
         self.bind('<B1-Motion>', self.mousemove)
         # загрузка палитры
-        self.define_pallete(self.color)
+        self.define_pallete()
         # выбор функции масштаба
         self.set_scale_function()
 
@@ -76,7 +85,7 @@ class Paint(Canvas):
         u"""Сеттер стиля кисти"""
         self.fig_type = string
 
-    def create_figure(self, coordX, coordY):
+    def create_figure(self, coord_x, coord_y):
         u"""Метод, рисующий с отображением (x, y - координаты базовой фигуры)"""
         # переменные размеров окна
         x_size = self.winfo_width()
@@ -84,8 +93,8 @@ class Paint(Canvas):
 
         # изменение цвета
         color = next(self.color)
-        x_center = coordX - x_size/2
-        y_center = coordY - y_size/2
+        x_center = coord_x - x_size/2
+        y_center = coord_y - y_size/2
         # масштаб - в зависимости от расстояния до центра
         size = start_figure_size * self.distance_func(x_center, y_center)
 
@@ -116,8 +125,8 @@ class Paint(Canvas):
             return None
 
         # координаты фигуры
-        point1 = coordX - size, coordY - size
-        point2 = coordX + size, coordY + size
+        point1 = coord_x - size, coord_y - size
+        point2 = coord_x + size, coord_y + size
 
         self.figure_symmetry(figure_function, point1, point2, color)
         return None
@@ -125,7 +134,7 @@ class Paint(Canvas):
     def figure_symmetry(self, func, point1, point2, color):
         u"""Функция симметричного отображения относительно главных диагоналей."""
         # коэффициенты растяжения для отображения относительно диагоналей
-        
+
         x1, y1 = point1
         x2, y2 = point2
         x_size = self.winfo_width()
@@ -142,29 +151,39 @@ class Paint(Canvas):
             for B2, B4 in [(x1 * x_k, x2 * x_k), ((x_size-x1) * x_k, (x_size-x2) * x_k)]:
                 func(round(A1), round(B2), round(A3), round(B4), **kwargs)
 
-    def define_pallete(self, index=0):
+    def define_pallete(self, index=-1):
         u"""Определение палитры, если возможно, её загрузка из файла"""
-        from os.path import isfile
-        if isfile('./palette{}.txt'.format(str(index))):
-            palette = []
-            with open('./palette{}.txt'.format(str(index))) as palette_text:
-                for line in palette_text:
-                    count = len(line)//6
-                    for i in range(count):
-                        position = i*6
-                        palette.append('#'+line[position:position+6])
+        if index > 0:
+            from os.path import isfile
+            from tkinter import messagebox
+            if isfile('./palette{}.txt'.format(str(index))):
+                palette = []
+                with open('./palette{}.txt'.format(str(index))) as palette_text:
+                    for line in palette_text:
+                        count = len(line)//6
+                        for i in range(count):
+                            position = i*6
+                            palette.append('#'+line[position:position+6])
 
-            def cycle(palette):
-                while palette:
-                    for element in palette:
-                        yield element
-            self.color.palette = cycle(palette)
+                def cycle(palette):
+                    while palette:
+                        for element in palette:
+                            yield element
+                self.color.palette = cycle(palette)
+            else:
+                messagebox.showerror(
+                    "Ошибка загрузки палитры.",
+                    "Внимание!\n\
+Не удалось загрузить файл палитры.\
+\nУстановлено случайное изменение цветов.")
+                self.color.palette = []
         else:
+            self.color.random_color = index
             if self.color.palette:
                 self.color.decode()
             self.color.palette = []
 
-    def set_scale_function(self, string='inverse_dist'):
+    def set_scale_function(self, string=''):
         u"""Выбор масштабирущей функции"""
         if string == 'manhatten':
             def func(x_center, y_center):
@@ -175,18 +194,20 @@ class Paint(Canvas):
             def func(x_center, y_center):
                 rho = x_center*x_center + y_center*y_center
                 screen_factor = self.winfo_width() * self.winfo_height()
-                return rho / screen_factor / start_figure_size
+                return rho / screen_factor * start_figure_size
         elif string == 'inv_Chebushev':
             def func(x_center, y_center):
                 coef = start_figure_size
-                rho = min(abs(x_center), abs(y_center)) + 3.0*coef
-                screen_factor = self.winfo_width() + self.winfo_height()
-                return screen_factor / rho / coef
-        else:  # string=="inverse_dist":
+                rho = min(abs(x_center), abs(y_center)) + coef*coef
+                screen_factor = sqrt(self.winfo_width() * self.winfo_height())
+                return screen_factor / rho
+        elif string == "inverse_dist":
             def func(x_center, y_center):
                 rho = x_center*x_center + y_center*y_center
                 screen_factor = self.winfo_width()*self.winfo_height()
                 return 1 / (sqrt(rho) / sqrt(screen_factor) + 0.15)
+        else:
+            func = lambda x, y: 1
         self.distance_func = func
 
 
@@ -220,16 +241,21 @@ class App(Tk):
         # меню выбора цвета
         palette_choice = Menu(main_menu)
         palette_choice.add_command(label='Случайная палитра',
-                                   command=lambda: self.canv.define_pallete(0))
+                                   command=lambda: self.canv.define_pallete(-1))
+        palette_choice.add_command(label='Плавная случайная палитра',
+                                   command=lambda: self.canv.define_pallete(-2))
         palette_choice.add_command(label='Палитра 1',
                                    command=lambda: self.canv.define_pallete(1))
         palette_choice.add_command(label='Палитра 2',
                                    command=lambda: self.canv.define_pallete(2))
         palette_choice.add_command(label='Палитра 3',
-                                   command=lambda: self.canv.define_pallete(3))
+                                   command=lambda: self.canv.define_pallete(5))
 
         # меню выбора масштабирования
         scale_choice = Menu(main_menu)
+        scale_choice.add_command(
+            label='Константа',
+            command=lambda: self.canv.set_scale_function())
         scale_choice.add_command(
             label='Обратное расстояние до центра',
             command=lambda: self.canv.set_scale_function('inverse_dist'))
