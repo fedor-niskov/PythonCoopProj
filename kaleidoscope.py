@@ -33,6 +33,7 @@ class Color():
 
     def __next__(self):
         u"""Получить следующий цвет."""
+        res = self.code
         if self.palette:
             self.code = next(self.palette)
         else:
@@ -45,7 +46,7 @@ class Color():
                 self.g = self.mutate(self.g)
                 self.b = self.mutate(self.b)
             self.code = '#' + '%0.2X' % self.r + '%0.2X' % self.g + '%0.2X' % self.b
-        return self.code
+        return res
 
     def mutate(self, component):
         u"""Плавное изменение одной компоненты цвета."""
@@ -61,6 +62,24 @@ class Color():
         result = (random.randrange(-self.color_dif, self.color_dif) + component) % 206 + 50
         return result
 
+
+class HistoryRecord():
+    u"""Запись в истории фигур"""
+    def __init__(self, **param):
+        # координата по x (относительная)
+        self.x = param["x"]
+        # координата по y (относительная)
+        self.y = param["y"]
+        # цвет - строка-код (color.code)
+        self.color = param["color"]
+        # тип (fig_type)
+        self.type = param["type"]
+        # название функции расстояния (distance_func_name)
+        self.distance = param["distance"]
+        # время (каждый клик мышкой увеличивает время на 1)
+        self.time = param["time"]
+
+
 class Paint(Canvas):
     """Класс виджета для рисования."""
 
@@ -72,14 +91,45 @@ class Paint(Canvas):
         # стартовый цвет
         self.color = Color()
         self.bind('<B1-Motion>', self.mousemove)
+        self.bind('<Button-1>', self.mousedown)
+        self.bind('<ButtonRelease-1>', self.mouseup)
         # загрузка палитры
         self.define_pallete()
         # выбор функции масштаба
         self.set_scale_function()
+        # история - список из HistoryRecord
+        self.history = []
+        # время (каждый клик мышкой увеличивает время на 1)
+        self.time = 0
 
     def mousemove(self, event):
-        """Обработка события движения мышки."""
+        u"""Обработка события движения мышки."""
+        self.history.append(HistoryRecord(
+            x = event.x / self.winfo_width(),
+            y = event.y / self.winfo_height(),
+            color = self.color.code,
+            type = self.fig_type,
+            distance = self.distance_func_name,
+            time = self.time
+        ))
         self.create_figure(int(event.x), int(event.y))
+
+    def mousedown(self, event):
+        self.time += 1
+
+    def mouseup(self, event):
+        pass
+
+    def repaint(self):
+        self.delete("all")
+        for h in self.history:
+            self.color.code = h.color
+            self.color.decode()
+            self.set_style(h.type)
+            self.set_scale_function(h.distance)
+            x = int(h.x * self.winfo_width())
+            y = int(h.y * self.winfo_height())
+            self.create_figure(x, y)
 
     def set_style(self, string):
         u"""Сеттер стиля кисти"""
@@ -208,7 +258,9 @@ class Paint(Canvas):
                 return 1 / (sqrt(rho) / sqrt(screen_factor) + 0.15)
         else:
             func = lambda x, y: 1
+        self.distance_func_name = string
         self.distance_func = func
+
 
 
 class App(Tk):
