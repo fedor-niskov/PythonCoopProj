@@ -1,6 +1,9 @@
 from tkinter import *
 import random
 from math import sqrt
+from tkinter import filedialog
+from os.path import isfile
+from tkinter import messagebox
 
 # стартовый цвет
 start_R, start_G, start_B = 150, 150, 150
@@ -33,6 +36,7 @@ class Color():
 
     def __next__(self):
         u"""Получить следующий цвет."""
+        res = self.code
         if self.palette:
             self.code = next(self.palette)
         else:
@@ -45,7 +49,7 @@ class Color():
                 self.g = self.mutate(self.g)
                 self.b = self.mutate(self.b)
             self.code = '#' + '%0.2X' % self.r + '%0.2X' % self.g + '%0.2X' % self.b
-        return self.code
+        return res
 
     def mutate(self, component):
         u"""Плавное изменение одной компоненты цвета."""
@@ -61,25 +65,153 @@ class Color():
         result = (random.randrange(-self.color_dif, self.color_dif) + component) % 206 + 50
         return result
 
+
+class HistoryRecord():
+    u"""Запись в истории фигур"""
+    def __init__(self, **param):
+        # координата по x (относительная)
+        self.x = param["x"]
+        # координата по y (относительная)
+        self.y = param["y"]
+        # цвет - строка-код (color.code)
+        self.color = param["color"]
+        # тип (fig_type)
+        self.type = param["type"]
+        # название функции расстояния (distance_func_name)
+        self.distance = param["distance"]
+        # время (каждый клик мышкой увеличивает время на 1)
+        self.time = param["time"]
+
+
 class Paint(Canvas):
     """Класс виджета для рисования."""
 
     def __init__(self, master=None, *ap, **an):
         Canvas.__init__(self, master, *ap, **an)
+        self.fig_size = start_figure_size
         self.fig_type = 'circle'
         # None в color_pick означает, что будет выбираться автоматически
         self.color_pick = None
         # стартовый цвет
         self.color = Color()
         self.bind('<B1-Motion>', self.mousemove)
+        self.bind('<Button-1>', self.mousedown)
+        self.bind('<ButtonRelease-1>', self.mouseup)
+        self.bind('<Configure>', lambda event: self.repaint())
         # загрузка палитры
         self.define_pallete()
         # выбор функции масштаба
-        self.set_scale_function()
+        self.set_scale_function('const')
+        # история - список из HistoryRecord
+        self.history = []
+        # время (каждый клик мышкой увеличивает время на 1)
+        self.time = 0
 
     def mousemove(self, event):
-        """Обработка события движения мышки."""
+        u"""Обработка события движения мышки."""
+        self.history.append(HistoryRecord(
+            x = event.x / self.winfo_width(),
+            y = event.y / self.winfo_height(),
+            color = self.color.code,
+            type = self.fig_type,
+            distance = self.distance_func_name,
+            time = self.time
+        ))
         self.create_figure(int(event.x), int(event.y))
+
+    def mousedown(self, event):
+        # очистка хвоста истории после undo (т.е. нельзя будет сделать его redo)
+        while self.history and self.history[-1].time > self.time:
+            self.history.pop()
+        # счёт времени
+        self.time += 1
+
+    def mouseup(self, event):
+        pass
+
+    def cleanup(self):
+        self.history = []
+        self.time = 0
+        self.delete("all")
+
+    def undo(self):
+        if self.time > 0:
+            self.time -= 1
+        self.repaint()
+
+    def redo(self):
+        if self.history and self.history[-1].time > self.time:
+            self.time += 1
+        self.repaint()
+
+    def save(self):
+        u"""Сохранение картинки в файл"""
+        filename = filedialog.asksaveasfilename(
+            initialdir = "/",
+            title = "Выберите файл",
+            filetypes = (("kaleidoscope files", "*.kld"),)
+        )
+        if not filename:
+            return
+        try:
+            with open(filename, "w") as f:
+                for h in self.history:
+                    f.write(
+                        str(h.x) + " " +
+                        str(h.y) + " " +
+                        h.color + " " +
+                        h.type + " " +
+                        h.distance + " " +
+                        "\n")
+        except BaseException:
+            self.history = []
+            messagebox.showerror(
+                "Ошибка",
+                "В процессе сохранения файла произошла ошибка")
+
+    def load(self):
+        u"""Загрузка картинки из файла"""
+        filename = filedialog.askopenfilename(
+            initialdir = "/",
+            title = "Выберите файл",
+            filetypes = (("kaleidoscope files", "*.kld"),)
+        )
+        if not filename:
+            return
+        self.history = []
+        self.time = 1
+        try:
+            with open(filename, "r") as f:
+                for l in f.readlines():
+                    l = l.split()
+                    self.history.append(HistoryRecord(
+                        x = float(l[0]),
+                        y = float(l[1]),
+                        color = l[2],
+                        type = l[3],
+                        distance = l[4],
+                        time = 1
+                    ))
+        except BaseException:
+            self.history = []
+            messagebox.showerror(
+                "Ошибка",
+                "В процессе загрузки файла произошла ошибка")
+        self.repaint()
+
+    def repaint(self):
+        u"""Перерисовка картинки согласно истории"""
+        self.delete("all")
+        for h in self.history:
+            if h.time > self.time:
+                continue
+            self.color.code = h.color
+            self.color.decode()
+            self.set_style(h.type)
+            self.set_scale_function(h.distance)
+            x = int(h.x * self.winfo_width())
+            y = int(h.y * self.winfo_height())
+            self.create_figure(x, y)
 
     def set_style(self, string):
         u"""Сеттер стиля кисти"""
@@ -96,7 +228,7 @@ class Paint(Canvas):
         x_center = coord_x - x_size/2
         y_center = coord_y - y_size/2
         # масштаб - в зависимости от расстояния до центра
-        size = start_figure_size * self.distance_func(x_center, y_center)
+        size = self.fig_size * self.distance_func(x_center, y_center)
 
         # переключение разных фигур с помощью self.fig_type
         if self.fig_type == 'triangle':
@@ -154,8 +286,6 @@ class Paint(Canvas):
     def define_pallete(self, index=-1):
         u"""Определение палитры, если возможно, её загрузка из файла"""
         if index > 0:
-            from os.path import isfile
-            from tkinter import messagebox
             if isfile('./palette{}.txt'.format(str(index))):
                 palette = []
                 with open('./palette{}.txt'.format(str(index))) as palette_text:
@@ -206,9 +336,29 @@ class Paint(Canvas):
                 rho = x_center*x_center + y_center*y_center
                 screen_factor = self.winfo_width()*self.winfo_height()
                 return 1 / (sqrt(rho) / sqrt(screen_factor) + 0.15)
-        else:
+        elif string == "const":
             func = lambda x, y: 1
+        else:
+            print("Warning")
+        self.distance_func_name = string
         self.distance_func = func
+
+
+class FigSizer(Toplevel):
+    u"""Окно, которое открывается для выбора размера фигуры"""
+    def __init__(self, default_size=start_figure_size):
+        Toplevel.__init__(self)
+        self.figsize = Scale(self, from_=1, to=50, orient=HORIZONTAL)
+        self.figsize.set(default_size)
+        self.figsize.pack()
+        self.button = Button(self, text='OK', command=self.quit)
+        self.button.pack()
+        self.title('Выберите размер')
+        self.protocol('WM_DELETE_WINDOW', self.quit)
+        # по центру экрана
+        x = (self.winfo_screenwidth() - self.winfo_width()) / 2
+        y = (self.winfo_screenheight() - self.winfo_height()) / 2
+        self.wm_geometry('+%d+%d' % (x, y))
 
 
 class App(Tk):
@@ -255,7 +405,7 @@ class App(Tk):
         scale_choice = Menu(main_menu)
         scale_choice.add_command(
             label='Константа',
-            command=lambda: self.canv.set_scale_function())
+            command=lambda: self.canv.set_scale_function('const'))
         scale_choice.add_command(
             label='Обратное расстояние до центра',
             command=lambda: self.canv.set_scale_function('inverse_dist'))
@@ -269,12 +419,24 @@ class App(Tk):
             label='Масштабирование, обратное Манхэттенскому',
             command=lambda: self.canv.set_scale_function('inv_Chebushev'))
 
+        # меню работы с файлами
+        file_menu = Menu(main_menu)
+        file_menu.add_command(
+            label='Загрузить...',
+            command=self.canv.load)
+        file_menu.add_command(
+            label='Сохранить...',
+            command=self.canv.save)
+
         # добавляем кнопку очистки холста и панели выбора
-        main_menu.add_command(
-            label='Очистить', command=lambda: self.canv.delete('all'))
+        main_menu.add_cascade(label='Файл', menu=file_menu)
+        main_menu.add_command(label='Очистить', command=self.canv.cleanup)
+        main_menu.add_command(label='Отменить', command=self.canv.undo)
+        main_menu.add_command(label='Повторить', command=self.canv.redo)
         main_menu.add_cascade(label='Стиль кисти', menu=brush_style)
         main_menu.add_cascade(label='Масштабирование', menu=scale_choice)
         main_menu.add_cascade(label='Палитра', menu=palette_choice)
+        main_menu.add_command(label='Размер', command=self.select_fig_size)
         self.config(menu=main_menu)
 
         # центрируем окно по центру экрана
@@ -284,6 +446,12 @@ class App(Tk):
         self.wm_geometry('+%d+%d' % (x, y))
 
         self.mainloop()
+
+    def select_fig_size(self):
+        fs = FigSizer(self.canv.fig_size)
+        fs.mainloop()
+        self.canv.fig_size = fs.figsize.get()
+        fs.destroy()
 
 
 if __name__ == '__main__':
