@@ -102,6 +102,8 @@ class Paint(Canvas):
         )
         if not filename:
             return
+        if not filename.endswith('.kld'):
+            filename += '.kld'
         try:
             with open(filename, "w") as f:
                 for h in self.history:
@@ -127,6 +129,8 @@ class Paint(Canvas):
         )
         if not filename:
             return
+        if not filename.endswith('.kld'):
+            filename += '.kld'
         self.history = []
         self.time = 1
         try:
