@@ -93,6 +93,7 @@ class Paint(Canvas):
         self.bind('<B1-Motion>', self.mousemove)
         self.bind('<Button-1>', self.mousedown)
         self.bind('<ButtonRelease-1>', self.mouseup)
+        self.bind('<Configure>', lambda event: self.repaint())
         # загрузка палитры
         self.define_pallete()
         # выбор функции масштаба
