@@ -126,6 +126,11 @@ class Paint(Canvas):
     def mouseup(self, event):
         pass
 
+    def cleanup(self):
+        self.history = []
+        self.time = 0
+        self.delete("all")
+
     def undo(self):
         if self.time > 0:
             self.time -= 1
@@ -398,8 +403,7 @@ class App(Tk):
 
         # добавляем кнопку очистки холста и панели выбора
         main_menu.add_cascade(label='Файл', menu=file_menu)
-        main_menu.add_command(
-            label='Очистить', command=lambda: self.canv.delete('all'))
+        main_menu.add_command(label='Очистить', command=self.canv.cleanup)
         main_menu.add_command(label='Отменить', command=self.canv.undo)
         main_menu.add_command(label='Повторить', command=self.canv.redo)
         main_menu.add_cascade(label='Стиль кисти', menu=brush_style)
