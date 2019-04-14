@@ -2,6 +2,8 @@ from tkinter import *
 import random
 from math import sqrt
 from tkinter import filedialog
+from os.path import isfile
+from tkinter import messagebox
 
 # стартовый цвет
 start_R, start_G, start_B = 150, 150, 150
@@ -150,15 +152,21 @@ class Paint(Canvas):
         )
         if not filename:
             return
-        with open(filename, "w") as f:
-            for h in self.history:
-                f.write(
-                    str(h.x) + " " +
-                    str(h.y) + " " +
-                    h.color + " " +
-                    h.type + " " +
-                    h.distance + " " +
-                    "\n")
+        try:
+            with open(filename, "w") as f:
+                for h in self.history:
+                    f.write(
+                        str(h.x) + " " +
+                        str(h.y) + " " +
+                        h.color + " " +
+                        h.type + " " +
+                        h.distance + " " +
+                        "\n")
+        except BaseException:
+            self.history = []
+            messagebox.showerror(
+                "Ошибка",
+                "В процессе сохранения файла произошла ошибка")
 
     def load(self):
         u"""Загрузка картинки из файла"""
@@ -171,19 +179,23 @@ class Paint(Canvas):
             return
         self.history = []
         self.time = 1
-        with open(filename, "r") as f:
+        try:
+            with open(filename, "r") as f:
+                for l in f.readlines():
+                    l = l.split()
+                    self.history.append(HistoryRecord(
+                        x = float(l[0]),
+                        y = float(l[1]),
+                        color = l[2],
+                        type = l[3],
+                        distance = l[4],
+                        time = 1
+                    ))
+        except BaseException:
             self.history = []
-            self.time = 1
-            for l in f.readlines():
-                l = l.split()
-                self.history.append(HistoryRecord(
-                    x = float(l[0]),
-                    y = float(l[1]),
-                    color = l[2],
-                    type = l[3],
-                    distance = l[4],
-                    time = 1
-                ))
+            messagebox.showerror(
+                "Ошибка",
+                "В процессе загрузки файла произошла ошибка")
         self.repaint()
 
     def repaint(self):
@@ -273,8 +285,6 @@ class Paint(Canvas):
     def define_pallete(self, index=-1):
         u"""Определение палитры, если возможно, её загрузка из файла"""
         if index > 0:
-            from os.path import isfile
-            from tkinter import messagebox
             if isfile('./palette{}.txt'.format(str(index))):
                 palette = []
                 with open('./palette{}.txt'.format(str(index))) as palette_text:
