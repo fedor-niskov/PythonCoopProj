@@ -3,7 +3,7 @@ import random
 from math import sqrt
 
 # стартовый цвет
-r, g, b = 150, 150, 150
+start_R, start_G, start_B = 150, 150, 150
 start_figure_size = 10
 canv_size = 700
 
@@ -12,79 +12,101 @@ class Color():
     u"""Класс, обеспечивающий хранение цвета,
 и выбор случайного цвета на основе текущего"""
 
-    def __init__(self, r=150, g=150, b=150):
+    def __init__(self, r=start_R, g=start_G, b=start_B):
         u"""Инициализация серым цветом"""
         self.r = r
         self.g = g
         self.b = b
-        self.color_dif = 30
+        self.code = '#' + '%0.2X' % self.r + '%0.2X' % self.g + '%0.2X' % self.b
+        self.palette = []
+        self.grad = 0
+        self.color_dif = 10
 
-    def randomize(self):
-        u"""Получить следующий рандомный цвет."""
-        self.r = self.mutate(self.color_dif, self.r)
-        self.g = self.mutate(self.color_dif, self.g)
-        self.b = self.mutate(self.color_dif, self.b)
+    def decode(self):
+        u"""Декодирование послденего цвета из hex в RGB"""
+        self.r = int(self.code[1:3], 16)
+        self.g = int(self.code[3:5], 16)
+        self.b = int(self.code[5:7], 16)
+
+    def __iter__(self):
         return self
 
-    def get_code(self):
-        u"""Конвертация в формат, удобный для tkinter canvas."""
-        res = '#' + '%0.2X' % self.r + '%0.2X' % self.g + '%0.2X' % self.b
-        return res
+    def __next__(self):
+        u"""Получить следующий цвет."""
+        if self.palette:
+            self.code = next(self.palette)
+        else:
+            self.r = self.mutate(self.r)
+            self.g = self.mutate(self.g)
+            self.b = self.mutate(self.b)
+            self.code = '#' + '%0.2X' % self.r + '%0.2X' % self.g + '%0.2X' % self.b
+        return self.code
 
-    def mutate(self, dif, component):
+    def mutate(self, component):
         u"""Изменение одной компоненты цвета."""
-        return (random.randrange(-dif, dif) + component) % 206 + 50
-
+        result = random.randrange(-self.color_dif, self.color_dif) + component
+        if result > 255:
+            result = 511 - result
+        elif result <= 0:
+            result = 50
+        return result
 
 
 class Paint(Canvas):
-    """Класс виджета для рисования"""
+    """Класс виджета для рисования."""
+
     def __init__(self, master=None, *ap, **an):
         Canvas.__init__(self, master, *ap, **an)
-        self.fig_type = "circle"
+        self.fig_type = 'circle'
         # None в color_pick означает, что будет выбираться автоматически
         self.color_pick = None
         # стартовый цвет
         self.color = Color()
-        self.bind("<B1-Motion>", self.mousemove)
+        self.bind('<B1-Motion>', self.mousemove)
+        # загрузка палитры
+        self.define_pallete(self.color)
+        # выбор функции масштаба
+        self.set_scale_function()
 
     def mousemove(self, event):
-        """Обработка события движения мышки"""
+        """Обработка события движения мышки."""
         self.create_figure(int(event.x), int(event.y))
 
-    def create_figure(self, x, y):
+    def set_style(self, string):
+        u"""Сеттер стиля кисти"""
+        self.fig_type = string
+
+    def create_figure(self, coordX, coordY):
         u"""Метод, рисующий с отображением (x, y - координаты базовой фигуры)"""
         # переменные размеров окна
-        x_s = self.winfo_width()
-        y_s = self.winfo_height()
+        x_size = self.winfo_width()
+        y_size = self.winfo_height()
 
         # изменение цвета
-        color = self.color.get_code()
-        self.color.randomize()
-        x0 = x - x_s/2
-        y0 = y - y_s/2
+        color = next(self.color)
+        x_center = coordX - x_size/2
+        y_center = coordY - y_size/2
         # масштаб - в зависимости от расстояния до центра
-        size = start_figure_size / ((
-            sqrt(x0*x0 + y0*y0)
-            / sqrt(x_s*y_s)) + 0.15)
+        size = start_figure_size * self.distance_func(x_center, y_center)
 
         # переключение разных фигур с помощью self.fig_type
         if self.fig_type == 'triangle':
             create_poly = self.create_polygon
-            def figure_function(x1, y1, x2, y2, fill, width):
-                # Треугольник, обращёныый углом к центру
+
+            def figure_function(x1, y1, x2, y2, **kwargs):
+                # Треугольник, обращённый углом к центру
                 x0 = (x1+x2)/2
-                rx = x0-x_s/2
+                rx = x0 - x_size/2
                 y0 = (y1+y2)/2
-                ry = y0-y_s/2
-                diameter = abs(x2-x1)/2
-                dx = rx/(sqrt(rx*rx)+0.001) * diameter
-                dy = ry/(sqrt(ry*ry)+0.001) * diameter
+                ry = y0 - y_size/2
+                rho = self.distance_func(rx, ry)
+                dx = rho * (x2-x1)/4
+                dy = rho * (y2-y1)/4
                 create_poly(
-                    round(x0 - dx), round(y0 - dy),
-                    round(x0 + dx), round(y0 - dy),
                     round(x0 - dx), round(y0 + dy),
-                    fill=fill, width=width)
+                    round(x0 + dx), round(y0 + dy),
+                    round(x0 + dx), round(y0 - dy),
+                    **kwargs)
         elif self.fig_type == 'circle':
             figure_function = self.create_oval
         elif self.fig_type == 'square':
@@ -94,27 +116,77 @@ class Paint(Canvas):
             return None
 
         # координаты фигуры
-        x1 = x - size
-        x2 = x + size
-        y1 = y - size
-        y2 = y + size
+        point1 = coordX - size, coordY - size
+        point2 = coordX + size, coordY + size
 
-        self.figure_symmetry(figure_function, y1, x1, y2, x2, x_s, y_s, color)
+        self.figure_symmetry(figure_function, point1, point2, color)
+        return None
 
-    def figure_symmetry(self, func, y1, x1, y2, x2, w, h, color):
+    def figure_symmetry(self, func, point1, point2, color):
         u"""Функция симметричного отображения относительно главных диагоналей."""
         # коэффициенты растяжения для отображения относительно диагоналей
-        x_k = h / w
-        y_k = w / h
+        y1, x1 = point1
+        y2, x2 = point2
+        x_size = self.winfo_width()
+        y_size = self.winfo_height()
+        x_k = y_size / x_size
+        y_k = x_size / y_size
 
         # 8 кругов
-        for A1, A3 in [(x1, x2), (w - x1, w-x2)]:
-            for B2, B4 in [(h-y1, h-y2), (y1, y2)]:
-                func(round(A1), round(B2), round(A3), round(B4), fill=color, width=0)
-        for A1, A3 in [(y1 * y_k, y2 * y_k), ((h-y1) * y_k, (h-y2) * y_k)]:
-            for B2, B4 in [(x1 * x_k, x2 * x_k), ((w-x1) * x_k, (w-x2) * x_k)]:
-                func(round(A1), round(B2), round(A3), round(B4), fill=color, width=0)
+        kwargs = {'fill': color, 'width': 0}
+        for A1, A3 in [(x1, x2), (x_size - x1, x_size-x2)]:
+            for B2, B4 in [(y_size-y1, y_size-y2), (y1, y2)]:
+                func(round(A1), round(B2), round(A3), round(B4), **kwargs)
+        for A1, A3 in [(y1 * y_k, y2 * y_k), ((y_size-y1) * y_k, (y_size-y2) * y_k)]:
+            for B2, B4 in [(x1 * x_k, x2 * x_k), ((x_size-x1) * x_k, (x_size-x2) * x_k)]:
+                func(round(A1), round(B2), round(A3), round(B4), **kwargs)
 
+    def define_pallete(self, index=0):
+        u"""Определение палитры, если возможно, её загрузка из файла"""
+        from os.path import isfile
+        if isfile('./palette{}.txt'.format(str(index))):
+            palette = []
+            with open('./palette{}.txt'.format(str(index))) as palette_text:
+                for line in palette_text:
+                    count = len(line)//6
+                    for i in range(count):
+                        position = i*6
+                        palette.append('#'+line[position:position+6])
+
+            def cycle(palette):
+                while palette:
+                    for element in palette:
+                        yield element
+            self.color.palette = cycle(palette)
+        else:
+            if self.color.palette:
+                self.color.decode()
+            self.color.palette = []
+
+    def set_scale_function(self, string='inverse_dist'):
+        u"""Выбор масштабирущей функции"""
+        if string == 'manhatten':
+            def func(x_center, y_center):
+                rho = (abs(x_center) + abs(y_center))*start_figure_size
+                screen_factor = self.winfo_width() + self.winfo_height()
+                return rho / screen_factor
+        elif string == 'square_dist':
+            def func(x_center, y_center):
+                rho = x_center*x_center + y_center*y_center
+                screen_factor = self.winfo_width() * self.winfo_height()
+                return rho / screen_factor / start_figure_size
+        elif string == 'inv_Chebushev':
+            def func(x_center, y_center):
+                coef = start_figure_size
+                rho = min(abs(x_center), abs(y_center)) + 3.0*coef
+                screen_factor = self.winfo_width() + self.winfo_height()
+                return screen_factor / rho / coef
+        else:  # string=="inverse_dist":
+            def func(x_center, y_center):
+                rho = x_center*x_center + y_center*y_center
+                screen_factor = self.winfo_width()*self.winfo_height()
+                return 1 / (sqrt(rho) / sqrt(screen_factor) + 0.15)
+        self.distance_func = func
 
 
 class App(Tk):
@@ -127,17 +199,56 @@ class App(Tk):
         self.title('Калейдоскоп')
         # создаем сам холст и помещаем его в окно
         self.canv = Paint(self, bg='white')
-        self.canv.grid(row = 0, column = 0, sticky = "wens")
+        self.canv.grid(row=0, column=0, sticky='wens')
         # чтобы занимал все окно
-        self.columnconfigure(index = 0, weight = 1)
-        self.rowconfigure(index = 0, weight = 1)
+        self.columnconfigure(index=0, weight=1)
+        self.rowconfigure(index=0, weight=1)
 
-        # добавляем меню с кнопкой очистки холста
+        # добавляем главное меню
         main_menu = Menu(self)
-        main_menu.add_command(label="Очистить", command = lambda: self.canv.delete("all"))
-        self.config(menu = main_menu)
 
-        # добавить меню выбора цвета и меню выбора фигуры
+        # меню выбора фигуры
+        brush_style = Menu(main_menu)
+        brush_style.add_command(label='Кружок',
+                                command=lambda: self.canv.set_style('circle'))
+        brush_style.add_command(label='Квадрат',
+                                command=lambda: self.canv.set_style('square'))
+        brush_style.add_command(label='Треугольник',
+                                command=lambda: self.canv.set_style('triangle'))
+
+        # меню выбора цвета
+        palette_choice = Menu(main_menu)
+        palette_choice.add_command(label='Случайная палитра',
+                                   command=lambda: self.canv.define_pallete(0))
+        palette_choice.add_command(label='Палитра 1',
+                                   command=lambda: self.canv.define_pallete(1))
+        palette_choice.add_command(label='Палитра 2',
+                                   command=lambda: self.canv.define_pallete(2))
+        palette_choice.add_command(label='Палитра 3',
+                                   command=lambda: self.canv.define_pallete(3))
+
+        # меню выбора масштабирования
+        scale_choice = Menu(main_menu)
+        scale_choice.add_command(
+            label='Обратное расстояние до центра',
+            command=lambda: self.canv.set_scale_function('inverse_dist'))
+        scale_choice.add_command(
+            label='Манхэттенское расстояние до центра',
+            command=lambda: self.canv.set_scale_function('manhatten'))
+        scale_choice.add_command(
+            label='Квадрат расстояния до центра',
+            command=lambda: self.canv.set_scale_function('square_dist'))
+        scale_choice.add_command(
+            label='Масштабирование, обратное Манхэттенскому',
+            command=lambda: self.canv.set_scale_function('inv_Chebushev'))
+
+        # добавляем кнопку очистки холста и панели выбора
+        main_menu.add_command(
+            label='Очистить', command=lambda: self.canv.delete('all'))
+        main_menu.add_cascade(label='Стиль кисти', menu=brush_style)
+        main_menu.add_cascade(label='Масштабирование', menu=scale_choice)
+        main_menu.add_cascade(label='Палитра', menu=palette_choice)
+        self.config(menu=main_menu)
 
         # центрируем окно по центру экрана
         self.update_idletasks()
@@ -146,7 +257,6 @@ class App(Tk):
         self.wm_geometry('+%d+%d' % (x, y))
 
         self.mainloop()
-
 
 
 if __name__ == '__main__':
