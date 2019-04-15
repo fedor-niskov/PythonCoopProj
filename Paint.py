@@ -1,4 +1,6 @@
-
+"""
+Основной модуль рисования на холсте, сохранения и загрузки истории
+"""
 from Color import Color
 from os.path import isfile
 import time
@@ -36,6 +38,10 @@ class Paint(Canvas):
         перерисовку в зависимости от размера
         использование разных палитр"""
     def __init__(self, master, *ap, **an):
+        """Инициализация с параметрами по умолчанию:
+            круглая кисть;
+            случайная палитра;
+            константная функция масштаба"""
         Canvas.__init__(self, master, *ap, **an)
         self.fig_size = START_FIGURE_SIZE
         self.fig_type = 'circle'
@@ -224,23 +230,38 @@ class Paint(Canvas):
         u"""Функция симметричного отображения относительно главных диагоналей."""
         # изменение цвета
         color = next(self.color)
-
-        x_1, y_1, x_2, y_2 = points
-        x_s, y_s = size
-        # коэффициенты растяжения относительно главных диагоналей
-        x_k = y_s / x_s
-        y_k = x_s / y_s
         kwargs = {'fill' : color, 'width' : 0}
+
+        #загрузка точек и размеров экрана
+        x_1, y_1, x_2, y_2 = points
+        x_size, y_size = size
+
+        # коэффициенты растяжения относительно главных диагоналей
+        x_coef = y_size / x_size
+        y_coef = x_size / y_size
+
+        # радиус-размерности
+        rdx = (x_2 - x_1) / 2
+        rdy = (y_2 - y_1) / 2
+
         # 8 фигур
-        func(y_1 * y_k, x_1 * x_k, y_2 * y_k, x_2 * x_k, **kwargs)
-        func((-y_1 + y_s) * y_k, x_1 * x_k, (-y_2 + y_s) * y_k, x_2 * x_k, **kwargs)
-        func(y_1 * y_k, (-x_1 + x_s) * x_k, y_2 * y_k, (-x_2 + x_s) * x_k, **kwargs)
-        func((-y_1 + y_s) * y_k, (-x_1 + x_s) * x_k,
-             (-y_2 + y_s) * y_k, (-x_2 + x_s) * x_k, **kwargs)
-        func(x_1, y_1, x_2, y_2, **kwargs)
-        func(-x_1 + x_s, -y_1 + y_s, -x_2 + x_s, -y_2 + y_s, **kwargs)
-        func(x_1, -y_1 + y_s, x_2, -y_2 + y_s, **kwargs)
-        func(-x_1 + x_s, y_1, -x_2 + x_s, y_2, **kwargs)
+        kwargs = {'fill': color, 'width': 0}
+        func((y_1 + rdy) * y_coef - rdy, (x_1 + rdx) * x_coef - rdx,
+             (y_2 - rdy) * y_coef + rdy, (x_2 - rdx) * x_coef + rdx, **kwargs)
+        func((y_size - y_1 - rdy) * y_coef + rdy, (x_1 + rdx) * x_coef - rdx,
+             (y_size - y_2 + rdy) * y_coef - rdy, (x_2 - rdx) * x_coef + rdx, **kwargs)
+        func((y_1 + rdy) * y_coef - rdy, (x_size - x_1 - rdx) * x_coef + rdx,
+             (y_2 - rdy) * y_coef + rdy, (x_size - x_2 + rdx) * x_coef - rdx, **kwargs)
+        func((y_size - y_1 - rdy) * y_coef + rdy, (x_size - x_1 - rdx) * x_coef + rdx,
+             (y_size - y_2 + rdy) * y_coef - rdy, (x_size - x_2 + rdx) * x_coef - rdx, **kwargs)
+        func(x_1, y_1,
+             x_2, y_2, **kwargs)
+        func(-x_1 + x_size, -y_1 + y_size,
+             -x_2 + x_size, -y_2 + y_size, **kwargs)
+        func(x_1, -y_1 + y_size,
+             x_2, -y_2 + y_size, **kwargs)
+        func(-x_1 + x_size, y_1,
+             -x_2 + x_size, y_2, **kwargs)
 
     def define_pallete(self, index=-1):
         u"""Определение палитры, если возможно, её загрузка из файла"""
@@ -327,7 +348,7 @@ class Paint(Canvas):
             img = ImageGrab.grab((self.winfo_rootx(), self.winfo_rooty(), self.winfo_rootx() + \
                 self.winfo_width(), self.winfo_rooty() + self.winfo_height()))
             img.save("11.png")
-                
+
         except ImportError:
             messagebox.showerror(
                 "Ошибка",
