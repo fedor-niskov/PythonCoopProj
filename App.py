@@ -1,5 +1,4 @@
 from tkinter import *
-from math import sqrt
 from tkinter import filedialog
 from tkinter import messagebox
 
@@ -94,11 +93,15 @@ class App(Tk):
             label='Сохранить...',
             command=self.canv.save)
 
+        file_menu.add_command(
+            label='Сохранить картинку...',
+            command=self.canv.save_to_png)
+
         # добавляем кнопку очистки холста и панели выбора
         main_menu.add_cascade(label='Файл', menu=file_menu)
         main_menu.add_command(label='Очистить', command=self.canv.cleanup)
-        main_menu.add_command(label='Отменить', command=self.canv.undo)
-        main_menu.add_command(label='Повторить', command=self.canv.redo)
+        main_menu.add_command(label='Undo', command=self.canv.undo)
+        main_menu.add_command(label='Redo', command=self.canv.redo)
         main_menu.add_cascade(label='Стиль кисти', menu=brush_style)
         main_menu.add_cascade(label='Масштабирование', menu=scale_choice)
         main_menu.add_cascade(label='Палитра', menu=palette_choice)
