@@ -1,7 +1,9 @@
 from tkinter import *
 from Color import Color
 from os.path import isfile
-
+import io
+import time
+from sys import platform
 
 start_figure_size = 10
 
@@ -65,8 +67,7 @@ class Paint(Canvas):
         self.create_figure(int(event.x), int(event.y))
 
     def mousedown(self, event):
-        u"""Очистка хвоста истории после undo (т.е. нельзя будет сделать его redo).
-        Реализует отмену действия всего нажатия мыши(по аналогии с редакторами) """
+        u"""Очистка хвоста истории после undo (т.е. нельзя будет сделать его redo)."""
         while self.history and self.history[-1].time > self.time:
             self.history.pop()
         # счёт времени
@@ -96,7 +97,7 @@ class Paint(Canvas):
     def save(self):
         u"""Сохранение картинки в файл"""
         filename = filedialog.asksaveasfilename(
-            initialdir = "/",
+            initialdir = ".",
             title = "Выберите файл",
             filetypes = (("kaleidoscope files", "*.kld"),)
         )
@@ -121,7 +122,7 @@ class Paint(Canvas):
     def load(self):
         u"""Загрузка картинки из файла"""
         filename = filedialog.askopenfilename(
-            initialdir = "/",
+            initialdir = ".",
             title = "Выберите файл",
             filetypes = (("kaleidoscope files", "*.kld"),)
         )
@@ -218,19 +219,26 @@ class Paint(Canvas):
 
         x1, y1 = point1
         x2, y2 = point2
+
         x_size = self.winfo_width()
         y_size = self.winfo_height()
         x_k = y_size / x_size
         y_k = x_size / y_size
+        rx = (x2 - x1) / 2
+        ry = (y2 - y1) / 2
+
+        # f_s_y = 0
+        # f_s_x = 0
 
         # 8 кругов
         kwargs = {'fill': color, 'width': 0}
-        for A1, A3 in [(x1, x2), (x_size - x1, x_size-x2)]:
-            for B2, B4 in [(y_size-y1, y_size-y2), (y1, y2)]:
-                func(round(A1), round(B2), round(A3), round(B4), **kwargs)
-        for A1, A3 in [(y1 * y_k, y2 * y_k), ((y_size-y1) * y_k, (y_size-y2) * y_k)]:
-            for B2, B4 in [(x1 * x_k, x2 * x_k), ((x_size-x1) * x_k, (x_size-x2) * x_k)]:
-                func(round(A1), round(B2), round(A3), round(B4), **kwargs)
+        for A1, A3 in [(x1, x2), (x_size - x1, x_size - x2)]:
+            for B2, B4 in [(y_size - y1, y_size - y2), (y1, y2)]:
+                func(int(A1), int(B2), int(A3), int(B4), **kwargs)
+
+        for A1, A3 in [((y1 + ry) * y_k - ry, (y2 - ry) * y_k + ry), ((y_size - y1 - ry) * y_k + ry, (y_size - y2 + ry) * y_k - ry)]:
+            for B2, B4 in [((x1 + rx) * x_k - rx, (x2 - rx) * x_k + rx), ((x_size - x1 - rx) * x_k + rx, (x_size - x2 + rx) * x_k - rx)]:
+                func(int(A1), int(B2), int(A3), int(B4), **kwargs)
 
     def define_pallete(self, index=-1):
         u"""Определение палитры, если возможно, её загрузка из файла"""
@@ -264,30 +272,69 @@ class Paint(Canvas):
 
     def set_scale_function(self, string=''):
         u"""Выбор масштабирущей функции"""
+        fig_min_size = 0.5
+        fig_div_size = 3
         if string == 'manhatten':
             def func(x_center, y_center):
                 rho = (abs(x_center) + abs(y_center))*start_figure_size
+                rho = rho / fig_div_size
                 screen_factor = self.winfo_width() + self.winfo_height()
-                return rho / screen_factor
+                return rho / screen_factor + fig_min_size
         elif string == 'square_dist':
             def func(x_center, y_center):
                 rho = x_center*x_center + y_center*y_center
+                rho = rho / fig_div_size
                 screen_factor = self.winfo_width() * self.winfo_height()
-                return rho / screen_factor * start_figure_size
+                return rho / screen_factor * start_figure_size + fig_min_size
         elif string == 'inv_Chebushev':
             def func(x_center, y_center):
                 coef = start_figure_size
                 rho = min(abs(x_center), abs(y_center)) + coef*coef
-                screen_factor = sqrt(self.winfo_width() * self.winfo_height())
+                rho = rho * fig_div_size
+                screen_factor = (self.winfo_width() * self.winfo_height())**0.5  + fig_min_size
                 return screen_factor / rho
         elif string == "inverse_dist":
             def func(x_center, y_center):
                 rho = x_center*x_center + y_center*y_center
+                rho = rho * fig_div_size * fig_div_size
                 screen_factor = self.winfo_width()*self.winfo_height()
-                return 1 / (sqrt(rho) / sqrt(screen_factor) + 0.15)
+                return 1 / (rho**0.5 / screen_factor**0.5 + 0.15) + fig_min_size
         elif string == "const":
             func = lambda x, y: 1
         else:
             print("Warning")
         self.distance_func_name = string
         self.distance_func = func
+
+    def save_to_png(self):
+        u"""Сохраненить в файл как картинку, к сожалению нету адекватного способа заставить работать на linux"""
+        filename = filedialog.asksaveasfilename(
+            initialdir = ".",
+            title = "Выберите файл",
+            filetypes = (("png file", "*.png"),)
+        )
+        if not filename:
+            return
+        try:
+            if platform == "linux" or platform == "linux2":
+                import pyscreenshot as ImageGrab
+            else:
+                from PIL import ImageGrab
+            # with open(filename, "w") as f:
+            time.sleep(0.5)
+            img = ImageGrab.grab((self.winfo_rootx(), self.winfo_rooty(), self.winfo_rootx() + \
+                self.winfo_width(), self.winfo_rooty() + self.winfo_height()))
+            img.save("11.png")
+                
+        except ImportError:
+            messagebox.showerror(
+                "Ошибка",
+                "Установите Pillow или pyscreenshot(такая библиотека)")
+
+
+
+        except BaseException:
+            self.history = []
+            messagebox.showerror(
+                "Ошибка",
+                "В процессе сохранения файла произошла ошибка")
