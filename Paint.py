@@ -22,6 +22,8 @@ class HistoryRecord():
         self.distance = param["distance"]
         # время (каждый клик мышкой увеличивает время на 1)
         self.time = param["time"]
+        # базовый размер фигуры (fig_size)
+        self.size = param["size"]
 
 
 class Paint(Canvas):
@@ -62,6 +64,7 @@ class Paint(Canvas):
             color = self.color.code,
             type = self.fig_type,
             distance = self.distance_func_name,
+            size = self.fig_size,
             time = self.time
         ))
         self.create_figure(int(event.x), int(event.y))
@@ -103,6 +106,8 @@ class Paint(Canvas):
         )
         if not filename:
             return
+        if not filename.endswith('.kld'):
+            filename += '.kld'
         try:
             with open(filename, "w") as f:
                 for h in self.history:
@@ -112,6 +117,7 @@ class Paint(Canvas):
                         h.color + " " +
                         h.type + " " +
                         h.distance + " " +
+                        str(h.size) + " " +
                         "\n")
         except BaseException:
             self.history = []
@@ -128,6 +134,8 @@ class Paint(Canvas):
         )
         if not filename:
             return
+        if not filename.endswith('.kld'):
+            filename += '.kld'
         self.history = []
         self.time = 1
         try:
@@ -140,6 +148,7 @@ class Paint(Canvas):
                         color = l[2],
                         type = l[3],
                         distance = l[4],
+                        size = float(l[5]),
                         time = 1
                     ))
         except BaseException:
@@ -157,6 +166,7 @@ class Paint(Canvas):
                 continue
             self.color.code = h.color
             self.color.decode()
+            self.fig_size = h.size
             self.set_style(h.type)
             self.set_scale_function(h.distance)
             x = int(h.x * self.winfo_width())
