@@ -1,11 +1,11 @@
-from tkinter import *
+
 from Color import Color
 from os.path import isfile
-import io
 import time
 from sys import platform
+from tkinter import Canvas, messagebox, filedialog
 
-start_figure_size = 10
+START_FIGURE_SIZE = 10
 
 class HistoryRecord():
     u"""Запись в истории фигур"""
@@ -35,9 +35,9 @@ class Paint(Canvas):
         очистку
         перерисовку в зависимости от размера
         использование разных палитр"""
-    def __init__(self, master=None, *ap, **an):
+    def __init__(self, master, *ap, **an):
         Canvas.__init__(self, master, *ap, **an)
-        self.fig_size = start_figure_size
+        self.fig_size = START_FIGURE_SIZE
         self.fig_type = 'circle'
         # None в color_pick означает, что будет выбираться автоматически
         self.color_pick = None
@@ -45,12 +45,11 @@ class Paint(Canvas):
         self.color = Color()
         self.bind('<B1-Motion>', self.mousemove)
         self.bind('<Button-1>', self.mousedown)
-        self.bind('<ButtonRelease-1>', self.mouseup)
         self.bind('<Configure>', lambda event: self.repaint())
         # загрузка палитры
         self.define_pallete()
         # выбор функции масштаба
-        self.set_scale_function('const')
+        self.set_scale_function()
         # история - список из HistoryRecord
         self.history = []
         # время (каждый клик мышкой увеличивает время на 1)
@@ -58,26 +57,25 @@ class Paint(Canvas):
 
     def mousemove(self, event):
         u"""Обработка события движения мышки."""
+        x_size = self.winfo_width()
+        y_size = self.winfo_height()
         self.history.append(HistoryRecord(
-            x = event.x / self.winfo_width(),
-            y = event.y / self.winfo_height(),
+            x = event.x,
+            y = event.y,
             color = self.color.code,
             type = self.fig_type,
             distance = self.distance_func_name,
             size = self.fig_size,
             time = self.time
         ))
-        self.create_figure(int(event.x), int(event.y))
+        self.create_figure(event.x, event.y, x_size, y_size)
 
-    def mousedown(self, event):
+    def mousedown(self, _):
         u"""Очистка хвоста истории после undo (т.е. нельзя будет сделать его redo)."""
         while self.history and self.history[-1].time > self.time:
             self.history.pop()
         # счёт времени
         self.time += 1
-
-    def mouseup(self, event):
-        pass
 
     def cleanup(self):
         u"""Очистка холста и истории действий"""
@@ -92,7 +90,7 @@ class Paint(Canvas):
         self.repaint()
 
     def redo(self):
-        u"""Отмена отвены"""
+        u"""Отмена отмены"""
         if self.history and self.history[-1].time > self.time:
             self.time += 1
         self.repaint()
@@ -169,86 +167,80 @@ class Paint(Canvas):
             self.fig_size = h.size
             self.set_style(h.type)
             self.set_scale_function(h.distance)
-            x = int(h.x * self.winfo_width())
-            y = int(h.y * self.winfo_height())
-            self.create_figure(x, y)
+            x_size = self.winfo_width()
+            y_size = self.winfo_height()
+            self.create_figure(h.x, h.y, x_size, y_size)
 
     def set_style(self, string):
         u"""Сеттер стиля кисти"""
         self.fig_type = string
 
-    def create_figure(self, coord_x, coord_y):
+    def create_figure(self, coord_x, coord_y, x_size, y_size):
         u"""Метод, рисующий с отображением (x, y - координаты базовой фигуры)"""
         # переменные размеров окна
-        x_size = self.winfo_width()
-        y_size = self.winfo_height()
 
-        # изменение цвета
-        color = next(self.color)
         x_center = coord_x - x_size/2
         y_center = coord_y - y_size/2
+
         # масштаб - в зависимости от расстояния до центра
-        size = self.fig_size * self.distance_func(x_center, y_center)
+        size = self.fig_size * self.distance_func(x_center, y_center, x_size, y_size)
 
         # переключение разных фигур с помощью self.fig_type
         if self.fig_type == 'triangle':
             create_poly = self.create_polygon
 
-            def figure_function(x1, y1, x2, y2, **kwargs):
+            def figure_function(x_1, y_1, x_2, y_2, **kwargs):
                 # Треугольник, обращённый углом к центру
-                x0 = (x1+x2)/2
-                rx = x0 - x_size/2
-                y0 = (y1+y2)/2
-                ry = y0 - y_size/2
-                rho = self.distance_func(rx, ry)
-                dx = rho * (x2-x1)/4
-                dy = rho * (y2-y1)/4
+                from math import copysign
+                x_0 = (x_1+x_2)/2
+                radius_x = x_0 - x_size/2
+                y_0 = (y_1+y_2)/2
+                radius_y = y_0 - y_size/2
+                rho = self.distance_func(radius_x, radius_y, x_size, y_size)
+                dxs = rho * abs(x_2-x_1) / copysign(2, radius_x)
+                dys = rho * abs(y_2-y_1) / copysign(2, radius_y)
                 create_poly(
-                    round(x0 - dx), round(y0 + dy),
-                    round(x0 + dx), round(y0 + dy),
-                    round(x0 + dx), round(y0 - dy),
+                    round(x_0 - dxs), round(y_0 - dys),
+                    round(x_0 + dxs), round(y_0 - dys),
+                    round(x_0 - dxs), round(y_0 + dys),
                     **kwargs)
         elif self.fig_type == 'circle':
             figure_function = self.create_oval
         elif self.fig_type == 'square':
             figure_function = self.create_rectangle
         else:
-            print('Warning')
-            return None
+            messagebox.showerror(
+                "Ошибка установки кисти.",
+                "Внимание!\n\
+Не удалось загрузить стиль кисти.\n\
+Установлена круглая кисть.")
+            figure_function = self.create_oval
 
         # координаты фигуры
-        point1 = coord_x - size, coord_y - size
-        point2 = coord_x + size, coord_y + size
+        points = coord_x - size, coord_y - size, coord_x + size, coord_y + size
+        self.figure_symmetry(figure_function, points, (x_size, y_size))
 
-        self.figure_symmetry(figure_function, point1, point2, color)
-        return None
-
-    def figure_symmetry(self, func, point1, point2, color):
+    def figure_symmetry(self, func, points, size):
         u"""Функция симметричного отображения относительно главных диагоналей."""
-        # коэффициенты растяжения для отображения относительно диагоналей
+        # изменение цвета
+        color = next(self.color)
 
-        x1, y1 = point1
-        x2, y2 = point2
-
-        x_size = self.winfo_width()
-        y_size = self.winfo_height()
-        x_k = y_size / x_size
-        y_k = x_size / y_size
-        rx = (x2 - x1) / 2
-        ry = (y2 - y1) / 2
-
-        # f_s_y = 0
-        # f_s_x = 0
-
-        # 8 кругов
-        kwargs = {'fill': color, 'width': 0}
-        for A1, A3 in [(x1, x2), (x_size - x1, x_size - x2)]:
-            for B2, B4 in [(y_size - y1, y_size - y2), (y1, y2)]:
-                func(int(A1), int(B2), int(A3), int(B4), **kwargs)
-
-        for A1, A3 in [((y1 + ry) * y_k - ry, (y2 - ry) * y_k + ry), ((y_size - y1 - ry) * y_k + ry, (y_size - y2 + ry) * y_k - ry)]:
-            for B2, B4 in [((x1 + rx) * x_k - rx, (x2 - rx) * x_k + rx), ((x_size - x1 - rx) * x_k + rx, (x_size - x2 + rx) * x_k - rx)]:
-                func(int(A1), int(B2), int(A3), int(B4), **kwargs)
+        x_1, y_1, x_2, y_2 = points
+        x_s, y_s = size
+        # коэффициенты растяжения относительно главных диагоналей
+        x_k = y_s / x_s
+        y_k = x_s / y_s
+        kwargs = {'fill' : color, 'width' : 0}
+        # 8 фигур
+        func(y_1 * y_k, x_1 * x_k, y_2 * y_k, x_2 * x_k, **kwargs)
+        func((-y_1 + y_s) * y_k, x_1 * x_k, (-y_2 + y_s) * y_k, x_2 * x_k, **kwargs)
+        func(y_1 * y_k, (-x_1 + x_s) * x_k, y_2 * y_k, (-x_2 + x_s) * x_k, **kwargs)
+        func((-y_1 + y_s) * y_k, (-x_1 + x_s) * x_k,
+             (-y_2 + y_s) * y_k, (-x_2 + x_s) * x_k, **kwargs)
+        func(x_1, y_1, x_2, y_2, **kwargs)
+        func(-x_1 + x_s, -y_1 + y_s, -x_2 + x_s, -y_2 + y_s, **kwargs)
+        func(x_1, -y_1 + y_s, x_2, -y_2 + y_s, **kwargs)
+        func(-x_1 + x_s, y_1, -x_2 + x_s, y_2, **kwargs)
 
     def define_pallete(self, index=-1):
         u"""Определение палитры, если возможно, её загрузка из файла"""
@@ -282,37 +274,37 @@ class Paint(Canvas):
 
     def set_scale_function(self, string=''):
         u"""Выбор масштабирущей функции"""
+        from math import sqrt
         fig_min_size = 0.5
         fig_div_size = 3
         if string == 'manhatten':
-            def func(x_center, y_center):
-                rho = (abs(x_center) + abs(y_center))*start_figure_size
+            def func(x_center, y_center, x_size, y_size):
+                rho = (abs(x_center) + abs(y_center))*START_FIGURE_SIZE
                 rho = rho / fig_div_size
-                screen_factor = self.winfo_width() + self.winfo_height()
+                screen_factor = x_size + y_size
                 return rho / screen_factor + fig_min_size
         elif string == 'square_dist':
-            def func(x_center, y_center):
+            def func(x_center, y_center, x_size, y_size):
                 rho = x_center*x_center + y_center*y_center
                 rho = rho / fig_div_size
-                screen_factor = self.winfo_width() * self.winfo_height()
-                return rho / screen_factor * start_figure_size + fig_min_size
+                screen_factor = x_size * y_size
+                return rho / screen_factor * START_FIGURE_SIZE + fig_min_size
         elif string == 'inv_Chebushev':
-            def func(x_center, y_center):
-                coef = start_figure_size
+            def func(x_center, y_center, x_size, y_size):
+                coef = START_FIGURE_SIZE
                 rho = min(abs(x_center), abs(y_center)) + coef*coef
                 rho = rho * fig_div_size
-                screen_factor = (self.winfo_width() * self.winfo_height())**0.5  + fig_min_size
+                screen_factor = sqrt(x_size * y_size)  + fig_min_size
                 return screen_factor / rho
         elif string == "inverse_dist":
-            def func(x_center, y_center):
+            def func(x_center, y_center, x_size, y_size):
                 rho = x_center*x_center + y_center*y_center
-                rho = rho * fig_div_size * fig_div_size
-                screen_factor = self.winfo_width()*self.winfo_height()
-                return 1 / (rho**0.5 / screen_factor**0.5 + 0.15) + fig_min_size
-        elif string == "const":
-            func = lambda x, y: 1
+                rho = sqrt(rho * fig_div_size * fig_div_size)
+                screen_factor = x_size * y_size
+                return 1 / (rho / sqrt(screen_factor) + 0.15) + fig_min_size
         else:
-            print("Warning")
+            def func(*_):
+                return 1.0
         self.distance_func_name = string
         self.distance_func = func
 
@@ -326,7 +318,7 @@ class Paint(Canvas):
         if not filename:
             return
         try:
-            if platform == "linux" or platform == "linux2":
+            if platform in ("linux", "linux2"):
                 import pyscreenshot as ImageGrab
             else:
                 from PIL import ImageGrab

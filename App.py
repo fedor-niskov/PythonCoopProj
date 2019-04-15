@@ -1,17 +1,14 @@
-from tkinter import *
-from tkinter import filedialog
-from tkinter import messagebox
+u"""Файл с классом приложения и необходимыми для него классами"""
+from tkinter import Toplevel, Scale, HORIZONTAL, Button, Tk, Menu
 
 from Paint import Paint
 
-
-u"""Файл с классом приложения и необходимыми для него классами"""
-canv_size = 700
-start_figure_size = 10
+START_CANVAS_SIZE = 700
+START_FIGURE_SIZE = 10
 
 class FigSizer(Toplevel):
     u"""Окно, которое открывается для выбора размера фигуры"""
-    def __init__(self, default_size=start_figure_size):
+    def __init__(self, default_size=START_FIGURE_SIZE):
         Toplevel.__init__(self)
         self.figsize = Scale(self, from_=1, to=50, orient=HORIZONTAL)
         self.figsize.set(default_size)
@@ -21,9 +18,9 @@ class FigSizer(Toplevel):
         self.title('Выберите размер')
         self.protocol('WM_DELETE_WINDOW', self.quit)
         # по центру экрана
-        x = (self.winfo_screenwidth() - self.winfo_width()) / 2
-        y = (self.winfo_screenheight() - self.winfo_height()) / 2
-        self.wm_geometry('+%d+%d' % (x, y))
+        x_center = (self.winfo_screenwidth() - self.winfo_width()) / 2
+        y_center = (self.winfo_screenheight() - self.winfo_height()) / 2
+        self.wm_geometry('+%d+%d' % (x_center, y_center))
 
 
 class App(Tk):
@@ -32,7 +29,7 @@ class App(Tk):
     def __init__(self):
         u"""Создание холста и запуск цикла отрисовки"""
         super(App, self).__init__()
-        self.geometry('{}x{}'.format(canv_size, canv_size))
+        self.geometry('{y}x{y}'.format(y=START_CANVAS_SIZE))
         self.title('Калейдоскоп')
         # создаем сам холст и помещаем его в окно
         self.canv = Paint(self, bg='white')
@@ -110,14 +107,15 @@ class App(Tk):
 
         # центрируем окно по центру экрана
         self.update_idletasks()
-        x = (self.winfo_screenwidth() - self.winfo_width()) / 2
-        y = (self.winfo_screenheight() - self.winfo_height()) / 2
-        self.wm_geometry('+%d+%d' % (x, y))
+        x_center = (self.winfo_screenwidth() - self.winfo_width()) / 2
+        y_center = (self.winfo_screenheight() - self.winfo_height()) / 2
+        self.wm_geometry('+%d+%d' % (x_center, y_center))
 
         self.mainloop()
 
     def select_fig_size(self):
-        fs = FigSizer(self.canv.fig_size)
-        fs.mainloop()
-        self.canv.fig_size = fs.figsize.get()
-        fs.destroy()
+        """Установка размера фигуры"""
+        fig_sizer = FigSizer(self.canv.fig_size)
+        fig_sizer.mainloop()
+        self.canv.fig_size = fig_sizer.figsize.get()
+        fig_sizer.destroy()
