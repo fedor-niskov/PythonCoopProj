@@ -436,8 +436,3 @@ class Paint(Canvas):
                 "Ошибка",
                 "Установите Pillow или pyscreenshot(такая библиотека)")
 
-        except BaseException:
-            self.history = []
-            messagebox.showerror(
-                "Ошибка",
-                "В процессе сохранения файла произошла ошибка")
