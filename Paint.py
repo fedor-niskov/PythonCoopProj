@@ -1,13 +1,15 @@
 """
 Основной модуль рисования на холсте, сохранения и загрузки истории
 """
-from Color import Color
+
 from os.path import isfile
 import time
 from sys import platform
 from tkinter import Canvas, messagebox, filedialog
+from Color import Color
 
 START_FIGURE_SIZE = 10
+_DEBUG = True
 
 class HistoryRecord():
     u"""Запись в истории фигур"""
@@ -26,6 +28,8 @@ class HistoryRecord():
         self.time = param["time"]
         # базовый размер фигуры (fig_size)
         self.size = param["size"]
+        #число симметрии
+        self.snum = param["snum"]
 
 
 class Paint(Canvas):
@@ -41,7 +45,8 @@ class Paint(Canvas):
         """Инициализация с параметрами по умолчанию:
             круглая кисть;
             случайная палитра;
-            константная функция масштаба"""
+            константная функция масштаба;
+            8 симметричных отображений"""
         Canvas.__init__(self, master, *ap, **an)
         self.fig_size = START_FIGURE_SIZE
         self.fig_type = 'circle'
@@ -52,27 +57,48 @@ class Paint(Canvas):
         self.bind('<B1-Motion>', self.mousemove)
         self.bind('<Button-1>', self.mousedown)
         self.bind('<Configure>', lambda event: self.repaint())
+        if _DEBUG:
+            self.bind("<ButtonPress-3>", self.scroll_start)
+            self.bind("<B3-Motion>", self.scroll_move)
         # загрузка палитры
-        self.define_pallete()
+        self.define_pallete(-1)
         # выбор функции масштаба
-        self.set_scale_function()
+        self.set_scale_function("constant")
+        # число симметричных отображений
+        self.num_symm = 8
         # история - список из HistoryRecord
         self.history = []
         # время (каждый клик мышкой увеличивает время на 1)
         self.time = 0
+        self.recalculate_coefficients()
+
+    def recalculate_coefficients(self):
+        u"""Перерасчёт коэффициентов отражения"""
+        from math import sin, cos, pi
+        x_size = self.winfo_width()
+        y_size = self.winfo_height()
+        x_coef = y_size / x_size
+        y_coef = x_size / y_size
+        if self.num_symm != 0:
+            omega = 2*pi/abs(self.num_symm)
+        cos_coef = [cos(omega*i) for i in range(self.num_symm)]
+        sin_ycoef = [sin(omega*i)*y_coef for i in range(self.num_symm)]
+        sin_xcoef = [sin(omega*i)*x_coef for i in range(self.num_symm)]
+        self.coefficients = cos_coef, sin_ycoef, sin_xcoef
 
     def mousemove(self, event):
         u"""Обработка события движения мышки."""
         x_size = self.winfo_width()
         y_size = self.winfo_height()
         self.history.append(HistoryRecord(
-            x = event.x,
-            y = event.y,
-            color = self.color.code,
+            x=event.x/x_size,
+            y=event.y/y_size,
+            color=self.color.code,
             type = self.fig_type,
             distance = self.distance_func_name,
             size = self.fig_size,
-            time = self.time
+            time = self.time,
+            snum = self.num_symm
         ))
         self.create_figure(event.x, event.y, x_size, y_size)
 
@@ -82,6 +108,12 @@ class Paint(Canvas):
             self.history.pop()
         # счёт времени
         self.time += 1
+
+    def scroll_start(self, event):
+        self.scan_mark(event.x, event.y)
+
+    def scroll_move(self, event):
+        self.scan_dragto(event.x, event.y, gain=1)
 
     def cleanup(self):
         u"""Очистка холста и истории действий"""
@@ -122,6 +154,7 @@ class Paint(Canvas):
                         h.type + " " +
                         h.distance + " " +
                         str(h.size) + " " +
+                        str(h.snum) + " " +
                         "\n")
         except BaseException:
             self.history = []
@@ -153,7 +186,8 @@ class Paint(Canvas):
                         type = l[3],
                         distance = l[4],
                         size = float(l[5]),
-                        time = 1
+                        time = 1,
+                        snum = int(l[6])
                     ))
         except BaseException:
             self.history = []
@@ -165,17 +199,22 @@ class Paint(Canvas):
     def repaint(self):
         u"""Перерисовка картинки согласно истории"""
         self.delete("all")
+        x_size = self.winfo_width()
+        y_size = self.winfo_height()
+        self.num_symm = 8
+        self.recalculate_coefficients()
         for h in self.history:
             if h.time > self.time:
                 continue
             self.color.code = h.color
-            self.color.decode()
             self.fig_size = h.size
             self.set_style(h.type)
+            self.num_symm = h.snum
+            if h.snum != self.num_symm:
+                self.recalculate_coefficients()
             self.set_scale_function(h.distance)
-            x_size = self.winfo_width()
-            y_size = self.winfo_height()
-            self.create_figure(h.x, h.y, x_size, y_size)
+            self.create_figure(h.x*x_size, h.y*y_size, x_size, y_size)
+        self.color.decode()
 
     def set_style(self, string):
         u"""Сеттер стиля кисти"""
@@ -184,9 +223,9 @@ class Paint(Canvas):
     def create_figure(self, coord_x, coord_y, x_size, y_size):
         u"""Метод, рисующий с отображением (x, y - координаты базовой фигуры)"""
         # переменные размеров окна
-
-        x_center = coord_x - x_size/2
-        y_center = coord_y - y_size/2
+        x_half_size, y_half_size = x_size/2, y_size/2
+        x_center = coord_x - x_half_size
+        y_center = coord_y - y_half_size
 
         # масштаб - в зависимости от расстояния до центра
         size = self.fig_size * self.distance_func(x_center, y_center, x_size, y_size)
@@ -195,73 +234,89 @@ class Paint(Canvas):
         if self.fig_type == 'triangle':
             create_poly = self.create_polygon
 
-            def figure_function(x_1, y_1, x_2, y_2, **kwargs):
+            def figure_function(x_center, y_center, size, **kwargs):
+                x_half_size, y_half_size, delta = size
                 # Треугольник, обращённый углом к центру
                 from math import copysign
-                x_0 = (x_1+x_2)/2
-                radius_x = x_0 - x_size/2
-                y_0 = (y_1+y_2)/2
-                radius_y = y_0 - y_size/2
-                rho = self.distance_func(radius_x, radius_y, x_size, y_size)
-                dxs = rho * abs(x_2-x_1) / copysign(2, radius_x)
-                dys = rho * abs(y_2-y_1) / copysign(2, radius_y)
+                x_0 = x_half_size + x_center
+                y_0 = y_half_size + y_center
+                dxs = copysign(delta, x_center)
+                dys = copysign(delta, y_center)
                 create_poly(
                     round(x_0 - dxs), round(y_0 - dys),
                     round(x_0 + dxs), round(y_0 - dys),
                     round(x_0 - dxs), round(y_0 + dys),
                     **kwargs)
         elif self.fig_type == 'circle':
-            figure_function = self.create_oval
+            def figure_function(x_center, y_center, size, **kwargs):
+                x_half_size, y_half_size, delta = size
+                x_base, y_base = x_half_size + x_center, y_half_size + y_center
+                self.create_oval(
+                    x_base - delta, y_base - delta,
+                    x_base + delta, y_base + delta,
+                    **kwargs)
         elif self.fig_type == 'square':
-            figure_function = self.create_rectangle
+            def figure_function(x_center, y_center, size, **kwargs):
+                x_half_size, y_half_size, delta = size
+                x_base, y_base = x_half_size + x_center, y_half_size + y_center
+                self.create_rectangle(
+                    x_base - delta, y_base - delta,
+                    x_base + delta, y_base + delta,
+                    **kwargs)
         else:
             messagebox.showerror(
                 "Ошибка установки кисти.",
                 "Внимание!\n\
 Не удалось загрузить стиль кисти.\n\
 Установлена круглая кисть.")
-            figure_function = self.create_oval
-
+            def figure_function(x_center, y_center, size, **kwargs):
+                x_half_size, y_half_size, delta = size
+                x_base, y_base = x_half_size + x_center, y_half_size + y_center
+                self.create_oval(
+                    x_base - delta, y_base - delta,
+                    x_base + delta, y_base + delta,
+                    **kwargs)
         # координаты фигуры
-        points = coord_x - size, coord_y - size, coord_x + size, coord_y + size
-        self.figure_symmetry(figure_function, points, (x_size, y_size))
+        self.figure_symmetry(
+            figure_function,
+            (x_center, y_center),
+            (x_half_size, y_half_size, size),
+            self.num_symm)
 
-    def figure_symmetry(self, func, points, size):
+    def figure_symmetry(self, func, base_point, size, num):
         u"""Функция симметричного отображения относительно главных диагоналей."""
         # изменение цвета
         color = next(self.color)
+        
         kwargs = {'fill' : color, 'width' : 0}
 
-        #загрузка точек и размеров экрана
-        x_1, y_1, x_2, y_2 = points
-        x_size, y_size = size
+        # загрузка точек и размеров экрана
+        x_center, y_center = base_point
+        # загрузка коэффициентов отражений
+        cos_coef, sin_ycoef, sin_xcoef = self.coefficients
 
-        # коэффициенты растяжения относительно главных диагоналей
-        x_coef = y_size / x_size
-        y_coef = x_size / y_size
-
-        # радиус-размерности
-        rdx = (x_2 - x_1) / 2
-        rdy = (y_2 - y_1) / 2
-
-        # 8 фигур
-        kwargs = {'fill': color, 'width': 0}
-        func((y_1 + rdy) * y_coef - rdy, (x_1 + rdx) * x_coef - rdx,
-             (y_2 - rdy) * y_coef + rdy, (x_2 - rdx) * x_coef + rdx, **kwargs)
-        func((y_size - y_1 - rdy) * y_coef + rdy, (x_1 + rdx) * x_coef - rdx,
-             (y_size - y_2 + rdy) * y_coef - rdy, (x_2 - rdx) * x_coef + rdx, **kwargs)
-        func((y_1 + rdy) * y_coef - rdy, (x_size - x_1 - rdx) * x_coef + rdx,
-             (y_2 - rdy) * y_coef + rdy, (x_size - x_2 + rdx) * x_coef - rdx, **kwargs)
-        func((y_size - y_1 - rdy) * y_coef + rdy, (x_size - x_1 - rdx) * x_coef + rdx,
-             (y_size - y_2 + rdy) * y_coef - rdy, (x_size - x_2 + rdx) * x_coef - rdx, **kwargs)
-        func(x_1, y_1,
-             x_2, y_2, **kwargs)
-        func(-x_1 + x_size, -y_1 + y_size,
-             -x_2 + x_size, -y_2 + y_size, **kwargs)
-        func(x_1, -y_1 + y_size,
-             x_2, -y_2 + y_size, **kwargs)
-        func(-x_1 + x_size, y_1,
-             -x_2 + x_size, y_2, **kwargs)
+        if num == 0:
+            # только кисть, без отражений
+            func(x_center, y_center, size, **kwargs)
+        elif num > 0:
+            # num фигур
+            kwargs = {'fill': color, 'width': 0}
+            for i in range(0,num):
+                func(x_center*cos_coef[i] + y_center*sin_ycoef[i],
+                     y_center*cos_coef[i] - x_center*sin_xcoef[i],
+                     size, **kwargs)
+                func(y_center*sin_ycoef[i] - x_center*cos_coef[i],
+                     x_center*sin_xcoef[i] + y_center*cos_coef[i],
+                     size, **kwargs)
+        else:
+            self.num_symm = 0
+            messagebox.showerror(
+                "Исключительная функция симметрии",
+                "Внимание!\n\
+Не удалось установить заданное симметричное отражение.\n\
+Установлена простая (одна) кисть.\n\
+Пожалуйста, задайте иное число симметрий.")
+            
 
     def define_pallete(self, index=-1):
         u"""Определение палитры, если возможно, её загрузка из файла"""
@@ -323,14 +378,23 @@ class Paint(Canvas):
                 rho = sqrt(rho * fig_div_size * fig_div_size)
                 screen_factor = x_size * y_size
                 return 1 / (rho / sqrt(screen_factor) + 0.15) + fig_min_size
+        elif string == "constant":
+            def func(*_):
+                return 1.0
         else:
+            messagebox.showerror(
+                "Ошибка установки функции масштабирования.",
+"Внимание!\n\
+Не удалось распознать функцию масштабирования.\n\
+Установлена константная функция.")
             def func(*_):
                 return 1.0
         self.distance_func_name = string
         self.distance_func = func
 
     def save_to_png(self):
-        u"""Сохраненить в файл как картинку, к сожалению нету адекватного способа заставить работать на linux"""
+        u"""Сохранить в файл как картинку, к сожалению
+        нету адекватного способа заставить работать на linux"""
         filename = filedialog.asksaveasfilename(
             initialdir = ".",
             title = "Выберите файл",

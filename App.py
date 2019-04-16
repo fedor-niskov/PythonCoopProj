@@ -5,6 +5,8 @@ from Paint import Paint
 
 START_CANVAS_SIZE = 700
 START_FIGURE_SIZE = 10
+START_SYMMETRY_NUMBER = 8
+_DEBUG = True
 
 class FigSizer(Toplevel):
     u"""Окно, которое открывается для выбора размера фигуры"""
@@ -22,6 +24,24 @@ class FigSizer(Toplevel):
         y_center = (self.winfo_screenheight() - self.winfo_height()) / 2
         self.wm_geometry('+%d+%d' % (x_center, y_center))
 
+class NumSymmetry(Toplevel):
+    u"""Окошко выбора числа симметричных отражений"""
+    def __init__(self, default_num_symm=START_SYMMETRY_NUMBER):
+        Toplevel.__init__(self)
+        if _DEBUG:
+            self.num_symm = Scale(self, from_=-8, to=8, orient=HORIZONTAL)
+        else:
+            self.num_symm = Scale(self, from_=0, to=8, orient=HORIZONTAL)
+        self.num_symm.set(default_num_symm)
+        self.num_symm.pack()
+        self.button = Button(self, text='OK', command=self.quit)
+        self.button.pack()
+        self.title('Число симметричных отражений')
+        self.protocol('WM_DELETE_WINDOW', self.quit)
+        # по центру экрана
+        x_center = (self.winfo_screenwidth() - self.winfo_width()) / 2
+        y_center = (self.winfo_screenheight() - self.winfo_height()) / 2
+        self.wm_geometry('+%d+%d' % (x_center, y_center))
 
 class App(Tk):
     u"""Главный класс приложения."""
@@ -103,6 +123,7 @@ class App(Tk):
         main_menu.add_cascade(label='Масштабирование', menu=scale_choice)
         main_menu.add_cascade(label='Палитра', menu=palette_choice)
         main_menu.add_command(label='Размер', command=self.select_fig_size)
+        main_menu.add_command(label='Симметрия', command=self.select_num_symm)
         self.config(menu=main_menu)
 
         # центрируем окно по центру экрана
@@ -119,3 +140,11 @@ class App(Tk):
         fig_sizer.mainloop()
         self.canv.fig_size = fig_sizer.figsize.get()
         fig_sizer.destroy()
+
+    def select_num_symm(self):
+        u"""Установка числа симметричных отражений"""
+        num_symmetry = NumSymmetry()
+        num_symmetry.mainloop()
+        self.canv.num_symm = num_symmetry.num_symm.get()
+        self.canv.recalculate_coefficients()
+        num_symmetry.destroy()

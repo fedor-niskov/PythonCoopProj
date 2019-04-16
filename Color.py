@@ -25,6 +25,7 @@ class Color():
 
     def __next__(self):
         u"""Получить следующий цвет."""
+        result = self.code
         if self.palette:
             self.code = next(self.palette)
         else:
@@ -37,7 +38,7 @@ class Color():
                 self.green = self.mutate(self.green)
                 self.blue = self.mutate(self.blue)
             self.code = '#' + '%0.2X' % self.red + '%0.2X' % self.green + '%0.2X' % self.blue
-        return self.code
+        return result
 
     def mutate(self, component):
         u"""Плавное изменение одной компоненты цвета."""
