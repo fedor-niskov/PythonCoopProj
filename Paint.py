@@ -54,23 +54,31 @@ class Paint(Canvas):
         self.color_pick = None
         # стартовый цвет
         self.color = Color()
+        # привязки функций-обработчиков
+        self.binding_functions()
+        # загрузка палитры
+        self.define_pallete(-1)
+        # выбор функции масштаба
+        self.set_scale_function("constant")
+        # число симметричных отображений
+        self.num_symm = 16
+        # история - список из HistoryRecord
+        self.history = []
+        # время (каждый клик мышкой увеличивает время на 1)
+        self.time = 0
+        self.recalculate_coefficients()
+
+    def binding_functions(self):
+        u"""Привязка функций-обработчиков:
+            нажатия и перемещения мыши - рисование,
+            изменения конфигурации - перерисовка изображения,
+            отладочная привязка перемещения по холсту на пр. кн. мыши"""
         self.bind('<B1-Motion>', self.mousemove)
         self.bind('<Button-1>', self.mousedown)
         self.bind('<Configure>', lambda event: self.repaint())
         if _DEBUG:
             self.bind("<ButtonPress-3>", self.scroll_start)
             self.bind("<B3-Motion>", self.scroll_move)
-        # загрузка палитры
-        self.define_pallete(-1)
-        # выбор функции масштаба
-        self.set_scale_function("constant")
-        # число симметричных отображений
-        self.num_symm = 8
-        # история - список из HistoryRecord
-        self.history = []
-        # время (каждый клик мышкой увеличивает время на 1)
-        self.time = 0
-        self.recalculate_coefficients()
 
     def recalculate_coefficients(self):
         u"""Перерасчёт коэффициентов отражения"""
@@ -79,11 +87,15 @@ class Paint(Canvas):
         y_size = self.winfo_height()
         x_coef = y_size / x_size
         y_coef = x_size / y_size
-        if self.num_symm != 0:
-            omega = 2*pi/abs(self.num_symm)
-        cos_coef = [cos(omega*i) for i in range(self.num_symm)]
-        sin_ycoef = [sin(omega*i)*y_coef for i in range(self.num_symm)]
-        sin_xcoef = [sin(omega*i)*x_coef for i in range(self.num_symm)]
+        if self.num_symm > 0:
+            num = self.num_symm // 2
+            omega = 2*pi/num
+        elif self.num_symm < 0:
+            num = - self.num_symm
+            omega = 2*pi/num
+        cos_coef = [cos(omega*i) for i in range(num)]
+        sin_ycoef = [sin(omega*i)*y_coef for i in range(num)]
+        sin_xcoef = [sin(omega*i)*x_coef for i in range(num)]
         self.coefficients = cos_coef, sin_ycoef, sin_xcoef
 
     def mousemove(self, event):
@@ -298,8 +310,16 @@ class Paint(Canvas):
         if num == 0:
             # только кисть, без отражений
             func(x_center, y_center, size, **kwargs)
-        elif num > 0:
-            # num фигур
+        elif num < 0:
+            # num фигур, простой поворот
+            kwargs = {'fill': color, 'width': 0}
+            for i in range(0, -num):
+                func(x_center*cos_coef[i] + y_center*sin_ycoef[i],
+                     y_center*cos_coef[i] - x_center*sin_xcoef[i],
+                     size, **kwargs)
+        elif num % 2 == 0:
+            num = num // 2
+            # num*2 фигур, симметричное отражение
             kwargs = {'fill': color, 'width': 0}
             for i in range(0,num):
                 func(x_center*cos_coef[i] + y_center*sin_ycoef[i],
@@ -407,18 +427,17 @@ class Paint(Canvas):
                 import pyscreenshot as ImageGrab
             else:
                 from PIL import ImageGrab
-            # with open(filename, "w") as f:
-            time.sleep(0.5)
-            img = ImageGrab.grab((self.winfo_rootx(), self.winfo_rooty(), self.winfo_rootx() + \
-                self.winfo_width(), self.winfo_rooty() + self.winfo_height()))
-            img.save("11.png")
+            img = ImageGrab.grab(
+                    self.winfo_rootx(),
+                    self.winfo_rooty(),
+                    self.winfo_rootx() + self.winfo_width(),
+                    self.winfo_rooty() + self.winfo_height())
+            img.save(filename)
 
         except ImportError:
             messagebox.showerror(
                 "Ошибка",
                 "Установите Pillow или pyscreenshot(такая библиотека)")
-
-
 
         except BaseException:
             self.history = []

@@ -28,15 +28,12 @@ class NumSymmetry(Toplevel):
     u"""Окошко выбора числа симметричных отражений"""
     def __init__(self, default_num_symm=START_SYMMETRY_NUMBER):
         Toplevel.__init__(self)
-        if _DEBUG:
-            self.num_symm = Scale(self, from_=-8, to=8, orient=HORIZONTAL)
-        else:
-            self.num_symm = Scale(self, from_=0, to=8, orient=HORIZONTAL)
+        self.num_symm = Scale(self, from_=-8, to=16, orient=HORIZONTAL)
         self.num_symm.set(default_num_symm)
         self.num_symm.pack()
         self.button = Button(self, text='OK', command=self.quit)
         self.button.pack()
-        self.title('Число симметричных отражений')
+        self.title('Число больше нуля - симметричные отражения, меньше нуля - симметричные повороты')
         self.protocol('WM_DELETE_WINDOW', self.quit)
         # по центру экрана
         x_center = (self.winfo_screenwidth() - self.winfo_width()) / 2
@@ -145,6 +142,10 @@ class App(Tk):
         u"""Установка числа симметричных отражений"""
         num_symmetry = NumSymmetry()
         num_symmetry.mainloop()
-        self.canv.num_symm = num_symmetry.num_symm.get()
+        num_symm = num_symmetry.num_symm.get()
+        if num_symm > 0:
+            self.canv.num_symm = num_symm * 2
+        else:
+            self.canv.num_symm = num_symm
         self.canv.recalculate_coefficients()
         num_symmetry.destroy()
