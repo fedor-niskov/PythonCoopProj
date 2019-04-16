@@ -27,13 +27,16 @@ class FigSizer(Toplevel):
 class NumSymmetry(Toplevel):
     u"""Окошко выбора числа симметричных отражений"""
     def __init__(self, default_num_symm=START_SYMMETRY_NUMBER):
+        text = 'Число больше нуля - симметричные отражения, меньше нуля - симметричные повороты'
         Toplevel.__init__(self)
-        self.num_symm = Scale(self, from_=-8, to=16, orient=HORIZONTAL)
+        self.num_symm = Scale(self, from_=-8, to=16,
+                              orient=HORIZONTAL,
+                              length=len(text)*8)
         self.num_symm.set(default_num_symm)
         self.num_symm.pack()
-        self.button = Button(self, text='OK', command=self.quit)
+        self.button = Button(self, text=text, command=self.quit)
         self.button.pack()
-        self.title('Число больше нуля - симметричные отражения, меньше нуля - симметричные повороты')
+        self.title('Выбор числа отражений, ноль - одна кисть')
         self.protocol('WM_DELETE_WINDOW', self.quit)
         # по центру экрана
         x_center = (self.winfo_screenwidth() - self.winfo_width()) / 2

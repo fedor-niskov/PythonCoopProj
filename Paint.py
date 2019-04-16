@@ -3,7 +3,6 @@
 """
 
 from os.path import isfile
-import time
 from sys import platform
 from tkinter import Canvas, messagebox, filedialog
 from Color import Color
@@ -93,6 +92,8 @@ class Paint(Canvas):
         elif self.num_symm < 0:
             num = - self.num_symm
             omega = 2*pi/num
+        else:
+            num = 0
         cos_coef = [cos(omega*i) for i in range(num)]
         sin_ycoef = [sin(omega*i)*y_coef for i in range(num)]
         sin_xcoef = [sin(omega*i)*x_coef for i in range(num)]
@@ -297,36 +298,34 @@ class Paint(Canvas):
 
     def figure_symmetry(self, func, base_point, size, num):
         u"""Функция симметричного отображения относительно главных диагоналей."""
-        # изменение цвета
-        color = next(self.color)
-        
-        kwargs = {'fill' : color, 'width' : 0}
+        # изменение цвета, заполнение цвета, канва фигуры
+        kwargs = {'fill' : next(self.color), 'width' : 0}
 
         # загрузка точек и размеров экрана
         x_center, y_center = base_point
         # загрузка коэффициентов отражений
         cos_coef, sin_ycoef, sin_xcoef = self.coefficients
 
+        # в зависимости от числа симметрий - разное число фигур
         if num == 0:
             # только кисть, без отражений
             func(x_center, y_center, size, **kwargs)
         elif num < 0:
             # num фигур, простой поворот
-            kwargs = {'fill': color, 'width': 0}
             for i in range(0, -num):
                 func(x_center*cos_coef[i] + y_center*sin_ycoef[i],
                      y_center*cos_coef[i] - x_center*sin_xcoef[i],
                      size, **kwargs)
         elif num % 2 == 0:
-            num = num // 2
             # num*2 фигур, симметричное отражение
-            kwargs = {'fill': color, 'width': 0}
-            for i in range(0,num):
-                func(x_center*cos_coef[i] + y_center*sin_ycoef[i],
-                     y_center*cos_coef[i] - x_center*sin_xcoef[i],
+            for i in range(0, num//2):
+                x_base_cos, x_base_sin = x_center*cos_coef[i], x_center*sin_xcoef[i]
+                y_base_cos, y_base_sin = y_center*cos_coef[i], y_center*sin_ycoef[i]
+                func(x_base_cos + y_base_sin,
+                     y_base_cos - x_base_sin,
                      size, **kwargs)
-                func(y_center*sin_ycoef[i] - x_center*cos_coef[i],
-                     x_center*sin_xcoef[i] + y_center*cos_coef[i],
+                func(y_base_sin - x_base_cos,
+                     x_base_sin + y_base_cos,
                      size, **kwargs)
         else:
             self.num_symm = 0
@@ -336,7 +335,6 @@ class Paint(Canvas):
 Не удалось установить заданное симметричное отражение.\n\
 Установлена простая (одна) кисть.\n\
 Пожалуйста, задайте иное число симметрий.")
-            
 
     def define_pallete(self, index=-1):
         u"""Определение палитры, если возможно, её загрузка из файла"""
@@ -404,7 +402,7 @@ class Paint(Canvas):
         else:
             messagebox.showerror(
                 "Ошибка установки функции масштабирования.",
-"Внимание!\n\
+                "Внимание!\n\
 Не удалось распознать функцию масштабирования.\n\
 Установлена константная функция.")
             def func(*_):
@@ -428,10 +426,10 @@ class Paint(Canvas):
             else:
                 from PIL import ImageGrab
             img = ImageGrab.grab(
-                    self.winfo_rootx(),
-                    self.winfo_rooty(),
-                    self.winfo_rootx() + self.winfo_width(),
-                    self.winfo_rooty() + self.winfo_height())
+                self.winfo_rootx(),
+                self.winfo_rooty(),
+                self.winfo_rootx() + self.winfo_width(),
+                self.winfo_rooty() + self.winfo_height())
             img.save(filename)
 
         except ImportError:
