@@ -411,8 +411,7 @@ class Paint(Canvas):
         self.distance_func = func
 
     def save_to_png(self):
-        u"""Сохранить в файл как картинку, к сожалению
-        нету адекватного способа заставить работать на linux"""
+        u"""Сохранить в файл как картинку"""
         filename = filedialog.asksaveasfilename(
             initialdir = ".",
             title = "Выберите файл",
@@ -425,11 +424,11 @@ class Paint(Canvas):
                 import pyscreenshot as ImageGrab
             else:
                 from PIL import ImageGrab
-            img = ImageGrab.grab(
+            img = ImageGrab.grab((
                 self.winfo_rootx(),
                 self.winfo_rooty(),
                 self.winfo_rootx() + self.winfo_width(),
-                self.winfo_rooty() + self.winfo_height())
+                self.winfo_rooty() + self.winfo_height()))
             img.save(filename)
 
         except ImportError:
@@ -437,8 +436,3 @@ class Paint(Canvas):
                 "Ошибка",
                 "Установите Pillow или pyscreenshot(такая библиотека)")
 
-        except BaseException:
-            self.history = []
-            messagebox.showerror(
-                "Ошибка",
-                "В процессе сохранения файла произошла ошибка")

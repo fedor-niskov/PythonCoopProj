@@ -73,15 +73,17 @@ class App(Tk):
         # меню выбора цвета
         palette_choice = Menu(main_menu)
         palette_choice.add_command(label='Случайная палитра',
-                                   command=lambda: self.canv.define_pallete(-1))
+                                   command=lambda: self.canv.color.define_palette(-1))
         palette_choice.add_command(label='Плавная случайная палитра',
-                                   command=lambda: self.canv.define_pallete(-2))
+                                   command=lambda: self.canv.color.define_palette(-2))
+        palette_choice.add_command(label='Палитра цвета сердца (полином)',
+                                   command=lambda: self.canv.color.define_palette(-4))
         palette_choice.add_command(label='Палитра 1',
-                                   command=lambda: self.canv.define_pallete(1))
+                                   command=lambda: self.canv.color.define_palette(1))
         palette_choice.add_command(label='Палитра 2',
-                                   command=lambda: self.canv.define_pallete(2))
+                                   command=lambda: self.canv.color.define_palette(2))
         palette_choice.add_command(label='Палитра 3',
-                                   command=lambda: self.canv.define_pallete(3))
+                                   command=lambda: self.canv.color.define_palette(3))
 
         # меню выбора масштабирования
         scale_choice = Menu(main_menu)
@@ -101,6 +103,15 @@ class App(Tk):
             label='Масштабирование, обратное Манхэттенскому',
             command=lambda: self.canv.set_scale_function('inv_Chebushev'))
 
+        # меню выбора стандартных функций
+        func_choice = Menu(main_menu)
+        func_choice.add_command(
+            label='Кардиоида',
+            command=lambda: self.heart(1))
+        func_choice.add_command(
+            label='Сердечко',
+            command=lambda: self.heart(2))
+
         # меню работы с файлами
         file_menu = Menu(main_menu)
         file_menu.add_command(
@@ -119,6 +130,7 @@ class App(Tk):
         main_menu.add_command(label='Очистить', command=self.canv.cleanup)
         main_menu.add_command(label='Undo', command=self.canv.undo)
         main_menu.add_command(label='Redo', command=self.canv.redo)
+        main_menu.add_cascade(label='Станд. функции', menu=func_choice)
         main_menu.add_cascade(label='Стиль кисти', menu=brush_style)
         main_menu.add_cascade(label='Масштабирование', menu=scale_choice)
         main_menu.add_cascade(label='Палитра', menu=palette_choice)
@@ -143,7 +155,7 @@ class App(Tk):
 
     def select_num_symm(self):
         u"""Установка числа симметричных отражений"""
-        num_symmetry = NumSymmetry()
+        num_symmetry = NumSymmetry(self.canv.num_symm)
         num_symmetry.mainloop()
         num_symm = num_symmetry.num_symm.get()
         if num_symm > 0:
@@ -152,3 +164,33 @@ class App(Tk):
             self.canv.num_symm = num_symm
         self.canv.recalculate_coefficients()
         num_symmetry.destroy()
+
+    def paint_function(self, func, steps):
+        u"""Функция отрисовки параметрической функции
+        func: (float, int, int) -> (float, float)
+        func(t, x, y), где t in [0,1)
+        с шагом дискретизации 1/steps"""
+        x_size = self.winfo_width()
+        y_size = self.winfo_height()
+        for time in range(0, steps):
+            x_coord, y_coord = func(time /steps, x_size, y_size)
+            self.canv.create_figure(x_coord, y_coord, x_size, y_size)
+
+    def heart(self, index=0):
+        """Сердечко <3
+        Обычная кардиоида, в двух вариантах исполнения"""
+        from math import sin, cos, pi, sqrt
+        if index == 2:
+            def func1(time, x_size, y_size):
+                x_coord = 16.*sin(time*pi*2.)**3
+                y_coord = -13.*cos(time*pi*2.)+5.*cos(4.*pi*time)+2.*cos(6.*pi*time)+cos(8.*pi*time)
+                return x_coord*x_size/128 + x_size/2, y_coord*y_size/128 + y_size/4
+            self.canv.color.define_palette(-2 - index)
+            self.paint_function(func1, 1000)
+        if index == 1:
+            def func2(time, x_size, y_size):
+                x_coord = cos(time*pi*2.)
+                y_coord = -sin(time*pi*2.)-sqrt(abs(x_coord))
+                return x_coord*x_size/7 + x_size/2, y_coord*y_size/8 + y_size/4
+            self.canv.color.define_palette(-2 - index)
+            self.paint_function(func2, 1000)
