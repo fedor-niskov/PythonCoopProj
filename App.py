@@ -89,7 +89,7 @@ class App(Tk):
         scale_choice = Menu(main_menu)
         scale_choice.add_command(
             label='Константа',
-            command=lambda: self.canv.set_scale_function('const'))
+            command=lambda: self.canv.set_scale_function('constant'))
         scale_choice.add_command(
             label='Обратное расстояние до центра',
             command=lambda: self.canv.set_scale_function('inverse_dist'))
