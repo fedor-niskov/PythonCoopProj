@@ -6,7 +6,7 @@ DISCRETE_STEP = 1024
 class Palette():
     u"""Класс палитры - загрузка из файла, либо установка функциональной зависимости"""
     def __init__(self):
-        self.palette = []
+        self.palette = None
         self.color_dif = 10
         self.gradient = 0.
         self.func = None
@@ -15,8 +15,7 @@ class Palette():
 
     def __next__(self):
         if self.palette:
-            for element in self.palette:
-                return element
+            return next(self.palette)
         if self.func:
             self.gradient += self.color_dif/DISCRETE_STEP
             if self.gradient > 1.:
@@ -28,18 +27,24 @@ class Palette():
     def load(self, index=-1):
         u"""Определение палитры, если возможно, её загрузка из файла"""
         self.func = None
-        self.palette = []
+        self.palette = None
         self.ready = 0
         if index > 0:
             if isfile('./palette{}.txt'.format(str(index))):
+                palette = []
                 with open('./palette{}.txt'.format(str(index))) as palette_text:
                     for line in palette_text:
                         count = len(line)//6
                         for i in range(count):
                             position = i*6
-                            self.palette.append('#'+line[position:position+6])
+                            palette.append('#'+line[position:position+6])
                 self.gradient = 0.
                 self.ready = 1
+                def cycle(palette):
+                    while True:
+                        for element in palette:
+                            yield element
+                self.palette = cycle(palette)
             else:
                 messagebox.showerror(
                     "Ошибка загрузки палитры.",
