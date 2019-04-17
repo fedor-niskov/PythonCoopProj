@@ -1,7 +1,7 @@
 u"""Файл с классом приложения и необходимыми для него классами"""
 from tkinter import Toplevel, Scale, HORIZONTAL, Button, Tk, Menu
 
-from Paint import Paint
+from Paint import Paint, HistoryRecord
 
 START_CANVAS_SIZE = 700
 START_FIGURE_SIZE = 10
@@ -125,7 +125,7 @@ class App(Tk):
             label='Сохранить картинку...',
             command=self.canv.save_to_png)
 
-        # добавляем кнопку очистки холста и панели выбора
+        # добавляем кнопки и менюшки
         main_menu.add_cascade(label='Файл', menu=file_menu)
         main_menu.add_command(label='Очистить', command=self.canv.cleanup)
         main_menu.add_command(label='Undo', command=self.canv.undo)
@@ -174,6 +174,16 @@ class App(Tk):
         y_size = self.winfo_height()
         for time in range(0, steps):
             x_coord, y_coord = func(time /steps, x_size, y_size)
+            self.canv.history.append(HistoryRecord(
+                x=x_coord/x_size,
+                y=y_coord/y_size,
+                color=self.canv.color.code,
+                type = self.canv.fig_type,
+                distance = self.canv.distance_func_name,
+                size = self.canv.fig_size,
+                time = self.canv.time,
+                snum = self.canv.num_symm
+            ))
             self.canv.create_figure(x_coord, y_coord, x_size, y_size)
 
     def heart(self, index=0):

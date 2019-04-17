@@ -2,7 +2,6 @@
 Основной модуль рисования на холсте, сохранения и загрузки истории
 """
 
-from os.path import isfile
 from sys import platform
 from tkinter import Canvas, messagebox, filedialog
 from Color import Color
@@ -56,7 +55,7 @@ class Paint(Canvas):
         # привязки функций-обработчиков
         self.binding_functions()
         # загрузка палитры
-        self.define_pallete(-1)
+        self.color.define_palette(-1)
         # выбор функции масштаба
         self.set_scale_function("constant")
         # число симметричных отображений
@@ -222,9 +221,10 @@ class Paint(Canvas):
             self.color.code = h.color
             self.fig_size = h.size
             self.set_style(h.type)
-            self.num_symm = h.snum
             if h.snum != self.num_symm:
+                self.num_symm = h.snum
                 self.recalculate_coefficients()
+            self.num_symm = h.snum
             self.set_scale_function(h.distance)
             self.create_figure(h.x*x_size, h.y*y_size, x_size, y_size)
         self.color.decode()
@@ -248,11 +248,12 @@ class Paint(Canvas):
             create_poly = self.create_polygon
 
             def figure_function(x_center, y_center, size, **kwargs):
-                x_half_size, y_half_size, delta = size
                 # Треугольник, обращённый углом к центру
+                x_half_size, y_half_size, delta = size
                 from math import copysign
                 x_0 = x_half_size + x_center
                 y_0 = y_half_size + y_center
+                # дельты размеров треугольника
                 dxs = copysign(delta, x_center)
                 dys = copysign(delta, y_center)
                 create_poly(
@@ -289,7 +290,7 @@ class Paint(Canvas):
                     x_base - delta, y_base - delta,
                     x_base + delta, y_base + delta,
                     **kwargs)
-        # координаты фигуры
+        # фигур симметричное отражение, от координат центра отсчитанное
         self.figure_symmetry(
             figure_function,
             (x_center, y_center),
@@ -336,36 +337,6 @@ class Paint(Canvas):
 Установлена простая (одна) кисть.\n\
 Пожалуйста, задайте иное число симметрий.")
 
-    def define_pallete(self, index=-1):
-        u"""Определение палитры, если возможно, её загрузка из файла"""
-        if index > 0:
-            if isfile('./palette{}.txt'.format(str(index))):
-                palette = []
-                with open('./palette{}.txt'.format(str(index))) as palette_text:
-                    for line in palette_text:
-                        count = len(line)//6
-                        for i in range(count):
-                            position = i*6
-                            palette.append('#'+line[position:position+6])
-
-                def cycle(palette):
-                    while palette:
-                        for element in palette:
-                            yield element
-                self.color.palette = cycle(palette)
-            else:
-                messagebox.showerror(
-                    "Ошибка загрузки палитры.",
-                    "Внимание!\n\
-Не удалось загрузить файл палитры.\
-\nУстановлено случайное изменение цветов.")
-                self.color.palette = []
-        else:
-            self.color.random_color = index
-            if self.color.palette:
-                self.color.decode()
-            self.color.palette = []
-
     def set_scale_function(self, string=''):
         u"""Выбор масштабирущей функции"""
         from math import sqrt
@@ -411,7 +382,8 @@ class Paint(Canvas):
         self.distance_func = func
 
     def save_to_png(self):
-        u"""Сохранить в файл как картинку"""
+        u"""Сохранить в файл как картинку, к сожалению
+        нету адекватного способа заставить работать на linux"""
         filename = filedialog.asksaveasfilename(
             initialdir = ".",
             title = "Выберите файл",
@@ -435,4 +407,9 @@ class Paint(Canvas):
             messagebox.showerror(
                 "Ошибка",
                 "Установите Pillow или pyscreenshot(такая библиотека)")
-
+            
+        except BaseException:
+            self.history = []
+            messagebox.showerror(
+                "Ошибка",
+                "В процессе сохранения файла произошла ошибка (require GhostScript)")
