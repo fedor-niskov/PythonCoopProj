@@ -381,6 +381,46 @@ class Paint(Canvas):
         self.distance_func_name = string
         self.distance_func = func
 
+    def paint_function(self, func, steps):
+        u"""Функция отрисовки параметрической функции
+        func: (float, int, int) -> (float, float)
+        func(t, x, y), где t in [0,1)
+        с шагом дискретизации 1/steps"""
+        x_size = self.winfo_width()
+        y_size = self.winfo_height()
+        for time in range(0, steps):
+            x_coord, y_coord = func(time /steps, x_size, y_size)
+            self.history.append(HistoryRecord(
+                x=x_coord/x_size,
+                y=y_coord/y_size,
+                color=self.color.code,
+                type = self.fig_type,
+                distance = self.distance_func_name,
+                size = self.fig_size,
+                time = self.time,
+                snum = self.num_symm
+            ))
+            self.create_figure(x_coord, y_coord, x_size, y_size)
+
+    def heart(self, index=0):
+        """Сердечко <3
+        Обычная кардиоида, в двух вариантах исполнения"""
+        from math import sin, cos, pi, sqrt
+        if index == 2:
+            def func1(time, x_size, y_size):
+                x_coord = 16.*sin(time*pi*2.)**3
+                y_coord = -13.*cos(time*pi*2.)+5.*cos(4.*pi*time)+2.*cos(6.*pi*time)+cos(8.*pi*time)
+                return x_coord*x_size/128 + x_size/2, y_coord*y_size/128 + y_size/4
+            self.color.define_palette(-2 - index)
+            self.paint_function(func1, 1000)
+        if index == 1:
+            def func2(time, x_size, y_size):
+                x_coord = cos(time*pi*2.)
+                y_coord = -sin(time*pi*2.)-sqrt(abs(x_coord))
+                return x_coord*x_size/7 + x_size/2, y_coord*y_size/8 + y_size/4
+            self.color.define_palette(-2 - index)
+            self.paint_function(func2, 1000)
+
     def save_to_png(self):
         u"""Сохранить в файл как картинку, к сожалению
         нету адекватного способа заставить работать на linux"""
