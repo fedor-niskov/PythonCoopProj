@@ -5,6 +5,7 @@ from Palette import Palette
 # стартовый цвет
 START_R, START_G, START_B = 150, 150, 150
 
+
 class Color():
     u"""Класс, обеспечивающий хранение, цвета, и выбор случайного цвета на основе текущего."""
 
@@ -64,4 +65,3 @@ class Color():
         u"""Загрузка палитры"""
         self.random_color = index
         self.palette.load(index)
-    

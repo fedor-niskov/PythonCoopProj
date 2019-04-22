@@ -1,12 +1,13 @@
 u"""Файл с классом приложения и необходимыми для него классами"""
-from tkinter import Toplevel, Scale, HORIZONTAL, Button, Tk, Menu
+from tkinter import Button, HORIZONTAL, Menu, Scale, Tk, Toplevel
 
-from Paint import Paint, HistoryRecord
+from Paint import Paint
 
 START_CANVAS_SIZE = 700
 START_FIGURE_SIZE = 10
 START_SYMMETRY_NUMBER = 8
 _DEBUG = True
+
 
 class FigSizer(Toplevel):
     u"""Окно, которое открывается для выбора размера фигуры"""
@@ -24,6 +25,7 @@ class FigSizer(Toplevel):
         y_center = (self.winfo_screenheight() - self.winfo_height()) / 2
         self.wm_geometry('+%d+%d' % (x_center, y_center))
 
+
 class NumSymmetry(Toplevel):
     u"""Окошко выбора числа симметричных отражений"""
     def __init__(self, default_num_symm=START_SYMMETRY_NUMBER):
@@ -31,7 +33,7 @@ class NumSymmetry(Toplevel):
         Toplevel.__init__(self)
         self.num_symm = Scale(self, from_=-8, to=16,
                               orient=HORIZONTAL,
-                              length=len(text)*8)
+                              length=len(text) * 8)
         self.num_symm.set(default_num_symm)
         self.num_symm.pack()
         self.button = Button(self, text=text, command=self.quit)
@@ -42,6 +44,7 @@ class NumSymmetry(Toplevel):
         x_center = (self.winfo_screenwidth() - self.winfo_width()) / 2
         y_center = (self.winfo_screenheight() - self.winfo_height()) / 2
         self.wm_geometry('+%d+%d' % (x_center, y_center))
+
 
 class App(Tk):
     u"""Главный класс приложения."""
@@ -164,4 +167,3 @@ class App(Tk):
             self.canv.num_symm = num_symm
         self.canv.recalculate_coefficients()
         num_symmetry.destroy()
-

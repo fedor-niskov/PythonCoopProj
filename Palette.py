@@ -3,6 +3,7 @@ from tkinter import messagebox
 from os.path import isfile
 DISCRETE_STEP = 1024
 
+
 class Palette():
     u"""Класс палитры - загрузка из файла, либо установка функциональной зависимости"""
     def __init__(self):
@@ -17,7 +18,7 @@ class Palette():
         if self.palette:
             return next(self.palette)
         if self.func:
-            self.gradient += self.color_dif/DISCRETE_STEP
+            self.gradient += self.color_dif / DISCRETE_STEP
             if self.gradient > 1.:
                 self.gradient -= 1.0
             result = self.func(self.gradient)
@@ -34,12 +35,13 @@ class Palette():
                 palette = []
                 with open('./palette{}.txt'.format(str(index))) as palette_text:
                     for line in palette_text:
-                        count = len(line)//6
+                        count = len(line) // 6
                         for i in range(count):
-                            position = i*6
-                            palette.append('#'+line[position:position+6])
+                            position = i * 6
+                            palette.append('#' + line[position:position + 6])
                 self.gradient = 0.
                 self.ready = 1
+
                 def cycle(palette):
                     while True:
                         for element in palette:
@@ -88,8 +90,8 @@ class Palette():
             time = 1.0
         deg = self.ready
         r_coeffs, g_coeffs, b_coeffs = self.colours
-        power = [time**(deg-k) for k in range(deg+1)]
-        r_comp = round(sum(r_coeffs[k]*power[k] for k in range(deg+1)))
-        g_comp = round(sum(g_coeffs[k]*power[k] for k in range(deg+1)))
-        b_comp = round(sum(b_coeffs[k]*power[k] for k in range(deg+1)))
+        power = [time**(deg - k) for k in range(deg + 1)]
+        r_comp = round(sum(r_coeffs[k] * power[k] for k in range(deg + 1)))
+        g_comp = round(sum(g_coeffs[k] * power[k] for k in range(deg + 1)))
+        b_comp = round(sum(b_coeffs[k] * power[k] for k in range(deg + 1)))
         return '#' + '%0.2X' % r_comp + '%0.2X' % g_comp + '%0.2X' % b_comp
