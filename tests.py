@@ -72,8 +72,10 @@ class TestColor(unittest.TestCase):
         self.assertEqual(next(self.color.palette), "#000040")
         self.assertEqual(next(self.color.palette), "#00003D")
 
+
 class TestPaint(unittest.TestCase):
     pass
+
 
 if __name__ == "__main__":
     testSuite = unittest.TestSuite()
