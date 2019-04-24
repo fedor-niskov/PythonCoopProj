@@ -4,3 +4,12 @@
 
 А больше увидеть можно всего лишь запустив!
 ![alt text](https://raw.githubusercontent.com/qeqer/PythonCoopProj/master/image.png)
+
+
+
+
+
+
+To test:
+1) coverage run tests.py
+2) coverage report -m --omit tests.py
