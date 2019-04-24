@@ -1,6 +1,7 @@
 import unittest
 from Palette import Palette
 from Color import Color
+from App import App
 
 """ Just run this file to test then
     1) coverage run tests.py
@@ -74,12 +75,24 @@ class TestColor(unittest.TestCase):
 
 
 class TestPaint(unittest.TestCase):
-    pass
+    # допишите кто-нибудь, суть примерно такая))
+    def setUp(self):
+        # тестовый стенд
+        self.root = App()
+
+    def test_paint1(self):
+        self.root.update()
+        self.root.update_idletasks()
+        self.root.canv.event_generate('<B1-Motion>', when="tail", x=40, y=40)
+        self.root.update()
+        self.root.update_idletasks()
+        self.assertEqual(self.root.canv.find_all(), (1, 2, 3, 4, 5, 6, 7, 8))
 
 
 if __name__ == "__main__":
     testSuite = unittest.TestSuite()
     testSuite.addTest(unittest.makeSuite(TestPalette))
     testSuite.addTest(unittest.makeSuite(TestColor))
+    testSuite.addTest(unittest.makeSuite(TestPaint))
     runner = unittest.TextTestRunner()
     runner.run(testSuite)

@@ -147,7 +147,7 @@ class App(Tk):
         y_center = (self.winfo_screenheight() - self.winfo_height()) / 2
         self.wm_geometry('+%d+%d' % (x_center, y_center))
 
-        self.mainloop()
+        # self.mainloop()
 
     def select_fig_size(self):
         """Установка размера фигуры"""
