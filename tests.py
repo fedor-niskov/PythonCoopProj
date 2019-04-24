@@ -75,18 +75,76 @@ class TestColor(unittest.TestCase):
 
 
 class TestPaint(unittest.TestCase):
-    # допишите кто-нибудь, суть примерно такая))
+
     def setUp(self):
         # тестовый стенд
         self.root = App()
+        self.update()
+
+    def tearDown(self):
+        self.root.destroy()
+
+    def update(self):
+        self.root.update()
+        self.root.update_idletasks()
 
     def test_paint1(self):
-        self.root.update()
-        self.root.update_idletasks()
         self.root.canv.event_generate('<B1-Motion>', when="tail", x=40, y=40)
-        self.root.update()
-        self.root.update_idletasks()
+        self.update()
         self.assertEqual(self.root.canv.find_all(), (1, 2, 3, 4, 5, 6, 7, 8))
+
+    def test_figure_menu(self):
+        self.root.brush_style.invoke(1)
+        self.update()
+        self.root.canv.event_generate('<B1-Motion>', when="tail", x=40, y=40)
+        self.update()
+        self.root.brush_style.invoke(2)
+        self.update()
+        self.root.canv.event_generate('<B1-Motion>', when="tail", x=40, y=40)
+        self.update()
+        self.root.brush_style.invoke(3)
+        self.update()
+        self.root.canv.event_generate('<B1-Motion>', when="tail", x=40, y=40)
+        self.update()
+        self.assertEqual(len(self.root.canv.find_all()), 3 * 8)
+
+    def test_scale_menu(self):
+        self.root.scale_choice.invoke(1)
+        self.update()
+        self.root.canv.event_generate('<B1-Motion>', when="tail", x=40, y=40)
+        self.update()
+        self.root.scale_choice.invoke(2)
+        self.update()
+        self.root.canv.event_generate('<B1-Motion>', when="tail", x=40, y=40)
+        self.update()
+        self.root.scale_choice.invoke(3)
+        self.update()
+        self.root.canv.event_generate('<B1-Motion>', when="tail", x=40, y=40)
+        self.update()
+        self.root.scale_choice.invoke(4)
+        self.update()
+        self.root.canv.event_generate('<B1-Motion>', when="tail", x=40, y=40)
+        self.update()
+        self.root.scale_choice.invoke(5)
+        self.update()
+        self.root.canv.event_generate('<B1-Motion>', when="tail", x=40, y=40)
+        self.update()
+        self.assertEqual(len(self.root.canv.find_all()), 5 * 8)
+
+    def test_undo_redo(self):
+        self.root.canv.event_generate('<Button-1>', when="tail", x=40, y=40)
+        self.root.canv.event_generate('<B1-Motion>', when="tail", x=40, y=40)
+        self.update()
+        self.root.canv.event_generate('<Button-1>', when="tail", x=50, y=50)
+        self.root.canv.event_generate('<B1-Motion>', when="tail", x=50, y=50)
+        self.update()
+        self.assertEqual(len(self.root.canv.find_all()), 2 * 8)
+        self.root.main_menu.invoke(3)
+        self.update()
+        self.assertEqual(len(self.root.canv.find_all()), 1 * 8)
+        self.root.main_menu.invoke(4)
+        self.update()
+        self.assertEqual(len(self.root.canv.find_all()), 2 * 8)
 
 
 if __name__ == "__main__":
