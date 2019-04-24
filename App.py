@@ -62,84 +62,83 @@ class App(Tk):
         self.rowconfigure(index=0, weight=1)
 
         # добавляем главное меню
-        main_menu = Menu(self)
+        self.main_menu = Menu(self)
 
         # меню выбора фигуры
-        brush_style = Menu(main_menu)
-        brush_style.add_command(label='Кружок',
+        self.brush_style = Menu(self.main_menu)
+        self.brush_style.add_command(label='Кружок',
                                 command=lambda: self.canv.set_style('circle'))
-        brush_style.add_command(label='Квадрат',
+        self.brush_style.add_command(label='Квадрат',
                                 command=lambda: self.canv.set_style('square'))
-        brush_style.add_command(label='Треугольник',
+        self.brush_style.add_command(label='Треугольник',
                                 command=lambda: self.canv.set_style('triangle'))
 
         # меню выбора цвета
-        palette_choice = Menu(main_menu)
-        palette_choice.add_command(label='Случайная палитра',
-                                   command=lambda: self.canv.color.define_palette(-1))
-        palette_choice.add_command(label='Плавная случайная палитра',
-                                   command=lambda: self.canv.color.define_palette(-2))
-        palette_choice.add_command(label='Палитра цвета сердца (полином)',
-                                   command=lambda: self.canv.color.define_palette(-4))
-        palette_choice.add_command(label='Палитра 1',
-                                   command=lambda: self.canv.color.define_palette(1))
-        palette_choice.add_command(label='Палитра 2',
-                                   command=lambda: self.canv.color.define_palette(2))
-        palette_choice.add_command(label='Палитра 3',
-                                   command=lambda: self.canv.color.define_palette(3))
+        self.palette_choice = Menu(self.main_menu)
+        self.palette_choice.add_command(label='Случайная палитра',
+                                        command=lambda: self.canv.color.define_palette(-1))
+        self.palette_choice.add_command(label='Плавная случайная палитра',
+                                        command=lambda: self.canv.color.define_palette(-2))
+        self.palette_choice.add_command(label='Палитра цвета сердца (полином)',
+                                        command=lambda: self.canv.color.define_palette(-4))
+        self.palette_choice.add_command(label='Палитра 1',
+                                        command=lambda: self.canv.color.define_palette(1))
+        self.palette_choice.add_command(label='Палитра 2',
+                                        command=lambda: self.canv.color.define_palette(2))
+        self.palette_choice.add_command(label='Палитра 3',
+                                        command=lambda: self.canv.color.define_palette(3))
 
         # меню выбора масштабирования
-        scale_choice = Menu(main_menu)
-        scale_choice.add_command(
+        self.scale_choice = Menu(self.main_menu)
+        self.scale_choice.add_command(
             label='Константа',
             command=lambda: self.canv.set_scale_function('constant'))
-        scale_choice.add_command(
+        self.scale_choice.add_command(
             label='Обратное расстояние до центра',
             command=lambda: self.canv.set_scale_function('inverse_dist'))
-        scale_choice.add_command(
+        self.scale_choice.add_command(
             label='Манхэттенское расстояние до центра',
             command=lambda: self.canv.set_scale_function('manhatten'))
-        scale_choice.add_command(
+        self.scale_choice.add_command(
             label='Квадрат расстояния до центра',
             command=lambda: self.canv.set_scale_function('square_dist'))
-        scale_choice.add_command(
+        self.scale_choice.add_command(
             label='Масштабирование, обратное Манхэттенскому',
             command=lambda: self.canv.set_scale_function('inv_Chebushev'))
 
         # меню выбора стандартных функций
-        func_choice = Menu(main_menu)
-        func_choice.add_command(
+        self.func_choice = Menu(self.main_menu)
+        self.func_choice.add_command(
             label='Кардиоида',
             command=lambda: self.canv.heart(1))
-        func_choice.add_command(
+        self.func_choice.add_command(
             label='Сердечко',
             command=lambda: self.canv.heart(2))
 
         # меню работы с файлами
-        file_menu = Menu(main_menu)
-        file_menu.add_command(
+        self.file_menu = Menu(self.main_menu)
+        self.file_menu.add_command(
             label='Загрузить...',
             command=self.canv.load)
-        file_menu.add_command(
+        self.file_menu.add_command(
             label='Сохранить...',
             command=self.canv.save)
-
-        file_menu.add_command(
+        self.file_menu.add_command(
             label='Сохранить картинку...',
             command=self.canv.save_to_png)
 
         # добавляем кнопки и менюшки
-        main_menu.add_cascade(label='Файл', menu=file_menu)
-        main_menu.add_command(label='Очистить', command=self.canv.cleanup)
-        main_menu.add_command(label='Undo', command=self.canv.undo)
-        main_menu.add_command(label='Redo', command=self.canv.redo)
-        main_menu.add_cascade(label='Станд. функции', menu=func_choice)
-        main_menu.add_cascade(label='Стиль кисти', menu=brush_style)
-        main_menu.add_cascade(label='Масштабирование', menu=scale_choice)
-        main_menu.add_cascade(label='Палитра', menu=palette_choice)
-        main_menu.add_command(label='Размер', command=self.select_fig_size)
-        main_menu.add_command(label='Симметрия', command=self.select_num_symm)
-        self.config(menu=main_menu)
+        self.main_menu.add_cascade(label='Файл', menu=self.file_menu)
+        self.main_menu.add_command(label='Очистить', command=self.canv.cleanup)
+        self.main_menu.add_command(label='Undo', command=self.canv.undo)
+        self.main_menu.add_command(label='Redo', command=self.canv.redo)
+        self.main_menu.add_cascade(label='Станд. функции', menu=self.func_choice)
+        self.main_menu.add_cascade(label='Стиль кисти', menu=self.brush_style)
+        self.main_menu.add_cascade(label='Масштабирование', menu=self.scale_choice)
+        self.main_menu.add_cascade(label='Палитра', menu=self.palette_choice)
+        self.main_menu.add_command(label='Размер', command=self.select_fig_size)
+        self.main_menu.add_command(label='Симметрия', command=self.select_num_symm)
+        self.config(menu=self.main_menu)
 
         # центрируем окно по центру экрана
         self.update_idletasks()
