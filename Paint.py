@@ -148,7 +148,7 @@ class Paint(Canvas):
         u"""Сохранение картинки в файл"""
         filename = filedialog.asksaveasfilename(
             initialdir=".",
-            title="Выберите файл",
+            title=Dict['save_file_dialog_title'],
             filetypes=(("kaleidoscope files", "*.kld"),)
         )
         if not filename:
@@ -170,14 +170,14 @@ class Paint(Canvas):
         except BaseException:
             self.history = []
             messagebox.showerror(
-                "Ошибка",
-                "В процессе сохранения файла произошла ошибка")
+                Dict['save_file_error_title'],
+                Dict['save_file_error'])
 
     def load(self):
         u"""Загрузка картинки из файла"""
         filename = filedialog.askopenfilename(
             initialdir=".",
-            title="Выберите файл",
+            title=Dict['load_file_dialog_title'],
             filetypes=(("kaleidoscope files", "*.kld"),)
         )
         if not filename:
@@ -203,8 +203,8 @@ class Paint(Canvas):
         except BaseException:
             self.history = []
             messagebox.showerror(
-                "Ошибка",
-                "В процессе загрузки файла произошла ошибка")
+                Dict['load_file_error_title'],
+                Dict['load_file_error'])
         self.repaint()
 
     def repaint(self):
@@ -285,10 +285,8 @@ class Paint(Canvas):
                     x_base + delta, y_base + delta,
                     **kwargs)
             messagebox.showerror(
-                "Ошибка установки кисти.",
-                "Внимание!\n\
-                Не удалось загрузить стиль кисти.\n\
-                Установлена круглая кисть.")
+                Dict['brush_error_title'],
+                Dict['brush_error'])
         # фигур симметричное отражение, от координат центра отсчитанное
         self.figure_symmetry(
             figure_function,
@@ -330,11 +328,8 @@ class Paint(Canvas):
         else:
             self.num_symm = 0
             messagebox.showerror(
-                "Исключительная функция симметрии",
-                "Внимание!\n\
-                Не удалось установить заданное симметричное отражение.\n\
-                Установлена простая (одна) кисть.\n\
-                Пожалуйста, задайте иное число симметрий.")
+                Dict['symm_error_title'],
+                Dict['symm_error'])
 
     def set_scale_function(self, string=''):
         u"""Выбор масштабирущей функции"""
@@ -373,10 +368,8 @@ class Paint(Canvas):
             def func(*_):
                 return 1.0
             messagebox.showerror(
-                "Ошибка установки функции масштабирования.",
-                "Внимание!\n\
-                Не удалось распознать функцию масштабирования.\n\
-                Установлена константная функция.")
+                Dict['scale_error_title'],
+                Dict['scale_error'])
         self.distance_func_name = string
         self.distance_func = func
 
@@ -426,7 +419,7 @@ class Paint(Canvas):
         нету адекватного способа заставить работать на linux"""
         filename = filedialog.asksaveasfilename(
             initialdir=".",
-            title="Выберите файл",
+            title=Dict['save_pic_dialog_title'],
             filetypes=(("png file", "*.png"),)
         )
         if not filename:
@@ -445,11 +438,11 @@ class Paint(Canvas):
 
         except ImportError:
             messagebox.showerror(
-                "Ошибка",
-                "Установите Pillow или pyscreenshot(такая библиотека)")
+                Dict['save_pic_import_error_title'],
+                Dict['save_pic_import_error'])
 
         except BaseException:
             self.history = []
             messagebox.showerror(
-                "Ошибка",
-                "В процессе сохранения файла произошла ошибка (require GhostScript)")
+                Dict['save_pic_error_title'],
+                Dict['save_pic_error'])
