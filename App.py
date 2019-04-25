@@ -1,5 +1,5 @@
 u"""Файл с классом приложения и необходимыми для него классами"""
-from tkinter import Button, HORIZONTAL, Menu, Scale, Tk, Toplevel
+from tkinter import Button, HORIZONTAL, Menu, Scale, Tk, Toplevel, Text, END
 
 from Paint import Paint
 
@@ -21,6 +21,7 @@ class FigSizer(Toplevel):
         self.title('Выберите размер')
         self.protocol('WM_DELETE_WINDOW', self.quit)
         # по центру экрана
+        self.update()
         x_center = (self.winfo_screenwidth() - self.winfo_width()) / 2
         y_center = (self.winfo_screenheight() - self.winfo_height()) / 2
         self.wm_geometry('+%d+%d' % (x_center, y_center))
@@ -41,6 +42,24 @@ class NumSymmetry(Toplevel):
         self.title('Выбор числа отражений, ноль - одна кисть')
         self.protocol('WM_DELETE_WINDOW', self.quit)
         # по центру экрана
+        self.update()
+        x_center = (self.winfo_screenwidth() - self.winfo_width()) / 2
+        y_center = (self.winfo_screenheight() - self.winfo_height()) / 2
+        self.wm_geometry('+%d+%d' % (x_center, y_center))
+
+
+class HelpWindow(Toplevel):
+    u"""Окно с помощью"""
+    def __init__(self):
+        with open("help_ru.txt", encoding="utf8") as in_file:
+            help_text = in_file.read()
+        Toplevel.__init__(self)
+        self.text_field = Text(self, height=30, width=100)
+        self.text_field.pack()
+        self.text_field.insert(END, help_text)
+        self.title('Помощь')
+        self.protocol('WM_DELETE_WINDOW', self.quit)
+        self.update()
         x_center = (self.winfo_screenwidth() - self.winfo_width()) / 2
         y_center = (self.winfo_screenheight() - self.winfo_height()) / 2
         self.wm_geometry('+%d+%d' % (x_center, y_center))
@@ -150,9 +169,10 @@ class App(Tk):
         # self.mainloop()
 
     def open_help(self):
-        with open("help.txt") as in_file:
-            help_text = in_file.read()
-        
+        """Открывает окно с помощью"""
+        help_wind = HelpWindow()
+        help_wind.mainloop()
+        help_wind.destroy()
 
     def select_fig_size(self):
         """Установка размера фигуры"""
