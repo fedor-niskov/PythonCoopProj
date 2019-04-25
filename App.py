@@ -2,6 +2,7 @@ u"""Файл с классом приложения и необходимыми 
 from tkinter import Button, HORIZONTAL, Menu, Scale, Tk, Toplevel, Text, END
 
 from Paint import Paint
+from Dict import Dict
 
 START_CANVAS_SIZE = 700
 START_FIGURE_SIZE = 10
@@ -18,7 +19,7 @@ class FigSizer(Toplevel):
         self.figsize.pack()
         self.button = Button(self, text='OK', command=self.quit)
         self.button.pack()
-        self.title('Выберите размер')
+        self.title(Dict['size_window_title'])
         self.protocol('WM_DELETE_WINDOW', self.quit)
         # по центру экрана
         self.update()
@@ -30,7 +31,7 @@ class FigSizer(Toplevel):
 class NumSymmetry(Toplevel):
     u"""Окошко выбора числа симметричных отражений"""
     def __init__(self, default_num_symm=START_SYMMETRY_NUMBER):
-        text = 'Число больше нуля - симметричные отражения, меньше нуля - симметричные повороты'
+        text = Dict['symm_window_text']
         Toplevel.__init__(self)
         self.num_symm = Scale(self, from_=-8, to=16,
                               orient=HORIZONTAL,
@@ -39,7 +40,7 @@ class NumSymmetry(Toplevel):
         self.num_symm.pack()
         self.button = Button(self, text=text, command=self.quit)
         self.button.pack()
-        self.title('Выбор числа отражений, ноль - одна кисть')
+        self.title(Dict['symm_window_title'])
         self.protocol('WM_DELETE_WINDOW', self.quit)
         # по центру экрана
         self.update()
@@ -51,13 +52,13 @@ class NumSymmetry(Toplevel):
 class HelpWindow(Toplevel):
     u"""Окно с помощью"""
     def __init__(self):
-        with open("help_ru.txt", encoding="utf8") as in_file:
+        with open(Dict["help_filename"], encoding="utf8") as in_file:
             help_text = in_file.read()
         Toplevel.__init__(self)
         self.text_field = Text(self, height=30, width=100)
         self.text_field.pack()
         self.text_field.insert(END, help_text)
-        self.title('Помощь')
+        self.title(Dict['help_window_title'])
         self.protocol('WM_DELETE_WINDOW', self.quit)
         self.update()
         x_center = (self.winfo_screenwidth() - self.winfo_width()) / 2
@@ -72,7 +73,7 @@ class App(Tk):
         u"""Создание холста и запуск цикла отрисовки"""
         super(App, self).__init__()
         self.geometry('{y}x{y}'.format(y=START_CANVAS_SIZE))
-        self.title('Калейдоскоп')
+        self.title(Dict['app_title'])
         # создаем сам холст и помещаем его в окно
         self.canv = Paint(self, bg='white')
         self.canv.grid(row=0, column=0, sticky='wens')
@@ -85,79 +86,81 @@ class App(Tk):
 
         # меню выбора фигуры
         self.brush_style = Menu(self.main_menu)
-        self.brush_style.add_command(label='Кружок', command=lambda: self.canv.set_style('circle'))
-        self.brush_style.add_command(label='Квадрат', command=lambda: self.canv.set_style('square'))
-        self.brush_style.add_command(label='Треугольник',
-                                     command=lambda: self.canv.set_style('triangle'))
+        self.brush_style.add_command(label=Dict['brush_style_circle'],
+                                command=lambda: self.canv.set_style('circle'))
+        self.brush_style.add_command(label=Dict['brush_style_square'],
+                                command=lambda: self.canv.set_style('square'))
+        self.brush_style.add_command(label=Dict['brush_style_triangle'],
+                                command=lambda: self.canv.set_style('triangle'))
 
         # меню выбора цвета
         self.palette_choice = Menu(self.main_menu)
-        self.palette_choice.add_command(label='Случайная палитра',
+        self.palette_choice.add_command(label=Dict['palette_menu_random'],
                                         command=lambda: self.canv.color.define_palette(-1))
-        self.palette_choice.add_command(label='Плавная случайная палитра',
+        self.palette_choice.add_command(label=Dict['palette_menu_gradual'],
                                         command=lambda: self.canv.color.define_palette(-2))
-        self.palette_choice.add_command(label='Палитра цвета сердца (полином)',
+        self.palette_choice.add_command(label=Dict['palette_menu_heart'],
                                         command=lambda: self.canv.color.define_palette(-4))
-        self.palette_choice.add_command(label='Палитра 1',
+        self.palette_choice.add_command(label=Dict['palette_menu_1'],
                                         command=lambda: self.canv.color.define_palette(1))
-        self.palette_choice.add_command(label='Палитра 2',
+        self.palette_choice.add_command(label=Dict['palette_menu_2'],
                                         command=lambda: self.canv.color.define_palette(2))
-        self.palette_choice.add_command(label='Палитра 3',
+        self.palette_choice.add_command(label=Dict['palette_menu_3'],
                                         command=lambda: self.canv.color.define_palette(3))
 
         # меню выбора масштабирования
         self.scale_choice = Menu(self.main_menu)
         self.scale_choice.add_command(
-            label='Константа',
+            label=Dict['scale_menu_const'],
             command=lambda: self.canv.set_scale_function('constant'))
         self.scale_choice.add_command(
-            label='Обратное расстояние до центра',
+            label=Dict['scale_menu_inverse'],
             command=lambda: self.canv.set_scale_function('inverse_dist'))
         self.scale_choice.add_command(
-            label='Манхэттенское расстояние до центра',
+            label=Dict['scale_menu_manhatten'],
             command=lambda: self.canv.set_scale_function('manhatten'))
         self.scale_choice.add_command(
-            label='Квадрат расстояния до центра',
+            label=Dict['scale_menu_square'],
             command=lambda: self.canv.set_scale_function('square_dist'))
         self.scale_choice.add_command(
-            label='Масштабирование, обратное Манхэттенскому',
+            label=Dict['scale_menu_inv'],
             command=lambda: self.canv.set_scale_function('inv_Chebushev'))
 
         # меню выбора стандартных функций
         self.func_choice = Menu(self.main_menu)
         self.func_choice.add_command(
-            label='Кардиоида',
+            label=Dict['func_menu_cardioid'],
             command=lambda: self.canv.heart(1))
         self.func_choice.add_command(
-            label='Сердечко',
+            label=Dict['func_menu_heart'],
             command=lambda: self.canv.heart(2))
 
         # меню работы с файлами
         self.file_menu = Menu(self.main_menu)
         self.file_menu.add_command(
-            label='Загрузить...',
+            label=Dict['file_menu_load'],
             command=self.canv.load)
         self.file_menu.add_command(
-            label='Сохранить...',
+            label=Dict['file_menu_save'],
             command=self.canv.save)
         self.file_menu.add_command(
-            label='Сохранить картинку...',
+            label=Dict['file_menu_save_pic'],
             command=self.canv.save_to_png)
         self.file_menu.add_command(
-            label='Помощь',
+            label=Dict['menu_help'],
             command=self.open_help)
 
         # добавляем кнопки и менюшки
-        self.main_menu.add_cascade(label='Файл', menu=self.file_menu)
-        self.main_menu.add_command(label='Очистить', command=self.canv.cleanup)
-        self.main_menu.add_command(label='Undo', command=self.canv.undo)
-        self.main_menu.add_command(label='Redo', command=self.canv.redo)
-        self.main_menu.add_cascade(label='Станд. функции', menu=self.func_choice)
-        self.main_menu.add_cascade(label='Стиль кисти', menu=self.brush_style)
-        self.main_menu.add_cascade(label='Масштабирование', menu=self.scale_choice)
-        self.main_menu.add_cascade(label='Палитра', menu=self.palette_choice)
-        self.main_menu.add_command(label='Размер', command=self.select_fig_size)
-        self.main_menu.add_command(label='Симметрия', command=self.select_num_symm)
+        self.main_menu.add_cascade(label=Dict['menu_file'], menu=self.file_menu)
+        self.main_menu.add_command(label=Dict['menu_clear'], command=self.canv.cleanup)
+        self.main_menu.add_command(label=Dict['menu_undo'], command=self.canv.undo)
+        self.main_menu.add_command(label=Dict['menu_redo'], command=self.canv.redo)
+        self.main_menu.add_cascade(label=Dict['menu_func'], menu=self.func_choice)
+        self.main_menu.add_cascade(label=Dict['menu_brush'], menu=self.brush_style)
+        self.main_menu.add_cascade(label=Dict['menu_scale'], menu=self.scale_choice)
+        self.main_menu.add_cascade(label=Dict['menu_palette'], menu=self.palette_choice)
+        self.main_menu.add_command(label=Dict['menu_size'], command=self.select_fig_size)
+        self.main_menu.add_command(label=Dict['menu_symm'], command=self.select_num_symm)
         self.config(menu=self.main_menu)
 
         # центрируем окно по центру экрана
