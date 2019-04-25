@@ -12,7 +12,7 @@ def load_dict(lang):
     Dict.clear()
     file = lang + '.i18n'
     try:
-        with open(file) as f:
+        with open(file, encoding='utf8') as f:
             Dict.update(ast.literal_eval(f.read()))
     except BaseException:
         print('Error loading language file')
