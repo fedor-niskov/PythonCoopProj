@@ -66,12 +66,10 @@ class App(Tk):
 
         # меню выбора фигуры
         self.brush_style = Menu(self.main_menu)
-        self.brush_style.add_command(label='Кружок',
-                                command=lambda: self.canv.set_style('circle'))
-        self.brush_style.add_command(label='Квадрат',
-                                command=lambda: self.canv.set_style('square'))
+        self.brush_style.add_command(label='Кружок', command=lambda: self.canv.set_style('circle'))
+        self.brush_style.add_command(label='Квадрат', command=lambda: self.canv.set_style('square'))
         self.brush_style.add_command(label='Треугольник',
-                                command=lambda: self.canv.set_style('triangle'))
+                                     command=lambda: self.canv.set_style('triangle'))
 
         # меню выбора цвета
         self.palette_choice = Menu(self.main_menu)
@@ -126,6 +124,9 @@ class App(Tk):
         self.file_menu.add_command(
             label='Сохранить картинку...',
             command=self.canv.save_to_png)
+        self.file_menu.add_command(
+            label='Помощь',
+            command=self.open_help)
 
         # добавляем кнопки и менюшки
         self.main_menu.add_cascade(label='Файл', menu=self.file_menu)
@@ -147,6 +148,11 @@ class App(Tk):
         self.wm_geometry('+%d+%d' % (x_center, y_center))
 
         # self.mainloop()
+
+    def open_help(self):
+        with open("help.txt") as in_file:
+            help_text = in_file.read()
+        
 
     def select_fig_size(self):
         """Установка размера фигуры"""
