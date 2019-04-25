@@ -3,7 +3,6 @@ from tkinter import Button, HORIZONTAL, Menu, Scale, Tk, Toplevel
 
 from Paint import Paint
 from Dict import Dict
-from Dict import load_dict
 
 START_CANVAS_SIZE = 700
 START_FIGURE_SIZE = 10
@@ -53,7 +52,6 @@ class App(Tk):
 
     def __init__(self):
         u"""Создание холста и запуск цикла отрисовки"""
-        load_dict('Russian')
         super(App, self).__init__()
         self.geometry('{y}x{y}'.format(y=START_CANVAS_SIZE))
         self.title(Dict['app_title'])
@@ -130,14 +128,6 @@ class App(Tk):
             label=Dict['file_menu_save_pic'],
             command=self.canv.save_to_png)
 
-        self.lang_menu = Menu(self.main_menu)
-        self.lang_menu.add_command(
-            label=Dict['lang_menu_en'],
-            command=lambda: load_dict('English'))
-        self.lang_menu.add_command(
-            label=Dict['lang_menu_ru'],
-            command=lambda: load_dict('Russian'))
-
         # добавляем кнопки и менюшки
         self.main_menu.add_cascade(label=Dict['menu_file'], menu=self.file_menu)
         self.main_menu.add_command(label=Dict['menu_clear'], command=self.canv.cleanup)
@@ -149,7 +139,6 @@ class App(Tk):
         self.main_menu.add_cascade(label=Dict['menu_palette'], menu=self.palette_choice)
         self.main_menu.add_command(label=Dict['menu_size'], command=self.select_fig_size)
         self.main_menu.add_command(label=Dict['menu_symm'], command=self.select_num_symm)
-        self.main_menu.add_cascade(label=Dict['menu_lang'], menu=self.lang_menu)
         self.config(menu=self.main_menu)
 
         # центрируем окно по центру экрана

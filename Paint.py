@@ -3,6 +3,7 @@ u"""Основной модуль рисования на холсте, сохр
 from sys import platform
 from tkinter import Canvas, messagebox, filedialog
 from Color import Color
+from Dict import Dict
 
 START_FIGURE_SIZE = 10
 _DEBUG = True
