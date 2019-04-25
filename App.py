@@ -1,5 +1,5 @@
 u"""Файл с классом приложения и необходимыми для него классами"""
-from tkinter import Button, HORIZONTAL, Menu, Scale, Tk, Toplevel
+from tkinter import Button, HORIZONTAL, Menu, Scale, Tk, Toplevel, Text, END
 
 from Paint import Paint
 from Dict import Dict
@@ -22,6 +22,7 @@ class FigSizer(Toplevel):
         self.title(Dict['size_window_title'])
         self.protocol('WM_DELETE_WINDOW', self.quit)
         # по центру экрана
+        self.update()
         x_center = (self.winfo_screenwidth() - self.winfo_width()) / 2
         y_center = (self.winfo_screenheight() - self.winfo_height()) / 2
         self.wm_geometry('+%d+%d' % (x_center, y_center))
@@ -42,6 +43,24 @@ class NumSymmetry(Toplevel):
         self.title(Dict['symm_window_title'])
         self.protocol('WM_DELETE_WINDOW', self.quit)
         # по центру экрана
+        self.update()
+        x_center = (self.winfo_screenwidth() - self.winfo_width()) / 2
+        y_center = (self.winfo_screenheight() - self.winfo_height()) / 2
+        self.wm_geometry('+%d+%d' % (x_center, y_center))
+
+
+class HelpWindow(Toplevel):
+    u"""Окно с помощью"""
+    def __init__(self):
+        with open("help_ru.txt", encoding="utf8") as in_file:
+            help_text = in_file.read()
+        Toplevel.__init__(self)
+        self.text_field = Text(self, height=30, width=100)
+        self.text_field.pack()
+        self.text_field.insert(END, help_text)
+        self.title('Помощь')
+        self.protocol('WM_DELETE_WINDOW', self.quit)
+        self.update()
         x_center = (self.winfo_screenwidth() - self.winfo_width()) / 2
         y_center = (self.winfo_screenheight() - self.winfo_height()) / 2
         self.wm_geometry('+%d+%d' % (x_center, y_center))
@@ -127,6 +146,9 @@ class App(Tk):
         self.file_menu.add_command(
             label=Dict['file_menu_save_pic'],
             command=self.canv.save_to_png)
+        self.file_menu.add_command(
+            label='Помощь',
+            command=self.open_help)
 
         # добавляем кнопки и менюшки
         self.main_menu.add_cascade(label=Dict['menu_file'], menu=self.file_menu)
@@ -148,6 +170,12 @@ class App(Tk):
         self.wm_geometry('+%d+%d' % (x_center, y_center))
 
         # self.mainloop()
+
+    def open_help(self):
+        """Открывает окно с помощью"""
+        help_wind = HelpWindow()
+        help_wind.mainloop()
+        help_wind.destroy()
 
     def select_fig_size(self):
         """Установка размера фигуры"""

@@ -1,4 +1,6 @@
 import unittest
+from unittest.mock import patch
+import os
 from Palette import Palette
 from Color import Color
 from App import App
@@ -139,12 +141,33 @@ class TestPaint(unittest.TestCase):
         self.root.canv.event_generate('<B1-Motion>', when="tail", x=50, y=50)
         self.update()
         self.assertEqual(len(self.root.canv.find_all()), 2 * 8)
-        self.root.main_menu.invoke(3)
+        self.root.main_menu.invoke(3)  # undo test
         self.update()
         self.assertEqual(len(self.root.canv.find_all()), 1 * 8)
-        self.root.main_menu.invoke(4)
+        self.root.main_menu.invoke(4)  # redo
         self.update()
         self.assertEqual(len(self.root.canv.find_all()), 2 * 8)
+
+    def test_save_load(self):
+        self.root.canv.event_generate('<Button-1>', when="tail", x=40, y=40)
+        self.root.canv.event_generate('<B1-Motion>', when="tail", x=40, y=40)
+        self.update()
+        self.root.canv.event_generate('<Button-1>', when="tail", x=50, y=50)
+        self.root.canv.event_generate('<B1-Motion>', when="tail", x=50, y=50)
+        self.update()
+        self.assertEqual(len(self.root.canv.find_all()), 2 * 8)
+        path = os.path.join(os.getcwd(), 'temporary_test_file.kld')
+        with patch('tkinter.filedialog.asksaveasfilename', return_value=path):
+            self.root.file_menu.invoke(2)  # save
+            self.update()
+        self.root.main_menu.invoke(2)  # clean
+        self.update()
+        self.assertEqual(len(self.root.canv.find_all()), 0)
+        with patch('tkinter.filedialog.askopenfilename', return_value=path):
+            self.root.file_menu.invoke(1)  # load
+            self.update()
+        self.assertEqual(len(self.root.canv.find_all()), 2 * 8)
+        os.remove(path)
 
 
 if __name__ == "__main__":
