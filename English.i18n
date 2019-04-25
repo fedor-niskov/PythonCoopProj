@@ -1,4 +1,5 @@
 {
+    'help_filename' : 'help_en.txt',
     'app_title' : 'Kaleidoscope',
     'brush_style_circle' : 'Circle',
     'brush_style_square' : 'Square',
@@ -19,6 +20,8 @@
     'file_menu_load' : 'Load...',
     'file_menu_save' : 'Save...',
     'file_menu_save_pic' : 'Save picture...',
+    'help_window_title' : 'Help',
+    'menu_help' : 'Help',
     'menu_file' : 'File',
     'menu_clear' : 'Clear',
     'menu_undo' : 'Undo',

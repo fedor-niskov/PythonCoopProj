@@ -52,13 +52,13 @@ class NumSymmetry(Toplevel):
 class HelpWindow(Toplevel):
     u"""Окно с помощью"""
     def __init__(self):
-        with open("help_ru.txt", encoding="utf8") as in_file:
+        with open(Dict["help_filename"], encoding="utf8") as in_file:
             help_text = in_file.read()
         Toplevel.__init__(self)
         self.text_field = Text(self, height=30, width=100)
         self.text_field.pack()
         self.text_field.insert(END, help_text)
-        self.title('Помощь')
+        self.title(Dict['help_window_title'])
         self.protocol('WM_DELETE_WINDOW', self.quit)
         self.update()
         x_center = (self.winfo_screenwidth() - self.winfo_width()) / 2
@@ -147,7 +147,7 @@ class App(Tk):
             label=Dict['file_menu_save_pic'],
             command=self.canv.save_to_png)
         self.file_menu.add_command(
-            label='Помощь',
+            label=Dict['menu_help'],
             command=self.open_help)
 
         # добавляем кнопки и менюшки

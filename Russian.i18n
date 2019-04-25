@@ -1,4 +1,5 @@
 {
+    'help_filename' : 'help_ru.txt',
     'app_title' : 'Калейдоскоп',
     'brush_style_circle' : 'Кружок',
     'brush_style_square' : 'Квадрат',
@@ -19,6 +20,8 @@
     'file_menu_load' : 'Загрузить...',
     'file_menu_save' : 'Сохранить...',
     'file_menu_save_pic' : 'Сохранить картинку...',
+    'help_window_title' : 'Помощь',
+    'menu_help' : 'Помощь',
     'menu_file' : 'Файл',
     'menu_clear' : 'Очистить',
     'menu_undo' : 'Отменить',
