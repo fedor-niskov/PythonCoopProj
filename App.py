@@ -1,5 +1,5 @@
 u"""Файл с классом приложения и необходимыми для него классами"""
-from tkinter import Button, HORIZONTAL, Menu, Scale, Tk, Toplevel, Text, END
+from tkinter import Button, HORIZONTAL, Menu, Scale, Tk, Toplevel, Text, END, Label
 
 from Paint import Paint
 from Dict import Dict
@@ -17,7 +17,9 @@ class FigSizer(Toplevel):
         self.figsize = Scale(self, from_=1, to=50, orient=HORIZONTAL)
         self.figsize.set(default_size)
         self.figsize.pack()
-        self.button = Button(self, text='OK', command=self.quit)
+        self.label = Label(self, text=Dict['size_window_text'])
+        self.label.pack()
+        self.button = Button(self, text=Dict['size_window_button'], command=self.quit)
         self.button.pack()
         self.title(Dict['size_window_title'])
         self.protocol('WM_DELETE_WINDOW', self.quit)
@@ -31,14 +33,14 @@ class FigSizer(Toplevel):
 class NumSymmetry(Toplevel):
     u"""Окошко выбора числа симметричных отражений"""
     def __init__(self, default_num_symm=START_SYMMETRY_NUMBER):
-        text = Dict['symm_window_text']
         Toplevel.__init__(self)
         self.num_symm = Scale(self, from_=-8, to=16,
-                              orient=HORIZONTAL,
-                              length=len(text) * 8)
+                              orient=HORIZONTAL)
         self.num_symm.set(default_num_symm)
         self.num_symm.pack()
-        self.button = Button(self, text=text, command=self.quit)
+        self.label = Label(self, text=Dict['symm_window_text'])
+        self.label.pack()
+        self.button = Button(self, text=Dict['symm_window_button'], command=self.quit)
         self.button.pack()
         self.title(Dict['symm_window_title'])
         self.protocol('WM_DELETE_WINDOW', self.quit)
