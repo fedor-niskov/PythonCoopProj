@@ -1,5 +1,5 @@
 u"""Файл с классом приложения и необходимыми для него классами"""
-from tkinter import Button, HORIZONTAL, Menu, Scale, Tk, Toplevel, Text, END
+from tkinter import Button, HORIZONTAL, Menu, Scale, Tk, Toplevel, Text, END, Label
 
 from Paint import Paint
 from Dict import Dict
@@ -17,7 +17,9 @@ class FigSizer(Toplevel):
         self.figsize = Scale(self, from_=1, to=50, orient=HORIZONTAL)
         self.figsize.set(default_size)
         self.figsize.pack()
-        self.button = Button(self, text='OK', command=self.quit)
+        self.label = Label(self, text=Dict['size_window_text'])
+        self.label.pack()
+        self.button = Button(self, text=Dict['size_window_button'], command=self.quit)
         self.button.pack()
         self.title(Dict['size_window_title'])
         self.protocol('WM_DELETE_WINDOW', self.quit)
@@ -31,14 +33,14 @@ class FigSizer(Toplevel):
 class NumSymmetry(Toplevel):
     u"""Окошко выбора числа симметричных отражений"""
     def __init__(self, default_num_symm=START_SYMMETRY_NUMBER):
-        text = Dict['symm_window_text']
         Toplevel.__init__(self)
         self.num_symm = Scale(self, from_=-8, to=16,
-                              orient=HORIZONTAL,
-                              length=len(text) * 8)
+                              orient=HORIZONTAL)
         self.num_symm.set(default_num_symm)
         self.num_symm.pack()
-        self.button = Button(self, text=text, command=self.quit)
+        self.label = Label(self, text=Dict['symm_window_text'])
+        self.label.pack()
+        self.button = Button(self, text=Dict['symm_window_button'], command=self.quit)
         self.button.pack()
         self.title(Dict['symm_window_title'])
         self.protocol('WM_DELETE_WINDOW', self.quit)
@@ -84,8 +86,11 @@ class App(Tk):
         # добавляем главное меню
         self.main_menu = Menu(self)
 
+        # здесь несколько вложенных меню для разных параметров
+        self.param_menu = Menu(self.main_menu)
+
         # меню выбора фигуры
-        self.brush_style = Menu(self.main_menu)
+        self.brush_style = Menu(self.param_menu)
         self.brush_style.add_command(label=Dict['brush_style_circle'],
                                 command=lambda: self.canv.set_style('circle'))
         self.brush_style.add_command(label=Dict['brush_style_square'],
@@ -94,7 +99,7 @@ class App(Tk):
                                 command=lambda: self.canv.set_style('triangle'))
 
         # меню выбора цвета
-        self.palette_choice = Menu(self.main_menu)
+        self.palette_choice = Menu(self.param_menu)
         self.palette_choice.add_command(label=Dict['palette_menu_random'],
                                         command=lambda: self.canv.color.define_palette(-1))
         self.palette_choice.add_command(label=Dict['palette_menu_gradual'],
@@ -109,7 +114,7 @@ class App(Tk):
                                         command=lambda: self.canv.color.define_palette(3))
 
         # меню выбора масштабирования
-        self.scale_choice = Menu(self.main_menu)
+        self.scale_choice = Menu(self.param_menu)
         self.scale_choice.add_command(
             label=Dict['scale_menu_const'],
             command=lambda: self.canv.set_scale_function('constant'))
@@ -135,6 +140,13 @@ class App(Tk):
             label=Dict['func_menu_heart'],
             command=lambda: self.canv.heart(2))
 
+        # объединение параметрических меню
+        self.param_menu.add_cascade(label=Dict['menu_brush'], menu=self.brush_style)
+        self.param_menu.add_cascade(label=Dict['menu_scale'], menu=self.scale_choice)
+        self.param_menu.add_cascade(label=Dict['menu_palette'], menu=self.palette_choice)
+        self.param_menu.add_command(label=Dict['menu_size'], command=self.select_fig_size)
+        self.param_menu.add_command(label=Dict['menu_symm'], command=self.select_num_symm)
+
         # меню работы с файлами
         self.file_menu = Menu(self.main_menu)
         self.file_menu.add_command(
@@ -146,21 +158,15 @@ class App(Tk):
         self.file_menu.add_command(
             label=Dict['file_menu_save_pic'],
             command=self.canv.save_to_png)
-        self.file_menu.add_command(
-            label=Dict['menu_help'],
-            command=self.open_help)
 
         # добавляем кнопки и менюшки
+        self.main_menu.add_command(label=Dict['menu_help'], command=self.open_help)
         self.main_menu.add_cascade(label=Dict['menu_file'], menu=self.file_menu)
-        self.main_menu.add_command(label=Dict['menu_clear'], command=self.canv.cleanup)
+        self.main_menu.add_cascade(label=Dict['menu_param'], menu=self.param_menu)
         self.main_menu.add_command(label=Dict['menu_undo'], command=self.canv.undo)
         self.main_menu.add_command(label=Dict['menu_redo'], command=self.canv.redo)
         self.main_menu.add_cascade(label=Dict['menu_func'], menu=self.func_choice)
-        self.main_menu.add_cascade(label=Dict['menu_brush'], menu=self.brush_style)
-        self.main_menu.add_cascade(label=Dict['menu_scale'], menu=self.scale_choice)
-        self.main_menu.add_cascade(label=Dict['menu_palette'], menu=self.palette_choice)
-        self.main_menu.add_command(label=Dict['menu_size'], command=self.select_fig_size)
-        self.main_menu.add_command(label=Dict['menu_symm'], command=self.select_num_symm)
+        self.main_menu.add_command(label=Dict['menu_clear'], command=self.canv.cleanup)
         self.config(menu=self.main_menu)
 
         # центрируем окно по центру экрана
