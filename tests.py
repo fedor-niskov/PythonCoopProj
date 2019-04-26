@@ -4,6 +4,7 @@ import os
 from Palette import Palette
 from Color import Color
 from App import App
+from Dict import load_dict
 
 """ Just run this file to test then
     1) coverage run tests.py
@@ -80,6 +81,7 @@ class TestPaint(unittest.TestCase):
 
     def setUp(self):
         # тестовый стенд
+        load_dict('English')
         self.root = App()
         self.update()
 
@@ -141,10 +143,10 @@ class TestPaint(unittest.TestCase):
         self.root.canv.event_generate('<B1-Motion>', when="tail", x=50, y=50)
         self.update()
         self.assertEqual(len(self.root.canv.find_all()), 2 * 8)
-        self.root.main_menu.invoke(3)  # undo test
+        self.root.main_menu.invoke(4)  # undo
         self.update()
         self.assertEqual(len(self.root.canv.find_all()), 1 * 8)
-        self.root.main_menu.invoke(4)  # redo
+        self.root.main_menu.invoke(5)  # redo
         self.update()
         self.assertEqual(len(self.root.canv.find_all()), 2 * 8)
 
@@ -160,7 +162,7 @@ class TestPaint(unittest.TestCase):
         with patch('tkinter.filedialog.asksaveasfilename', return_value=path):
             self.root.file_menu.invoke(2)  # save
             self.update()
-        self.root.main_menu.invoke(2)  # clean
+        self.root.main_menu.invoke(7)  # clean
         self.update()
         self.assertEqual(len(self.root.canv.find_all()), 0)
         with patch('tkinter.filedialog.askopenfilename', return_value=path):
