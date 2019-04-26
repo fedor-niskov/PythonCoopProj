@@ -22,6 +22,7 @@
     'file_menu_save_pic' : 'Сохранить картинку...',
     'help_window_title' : 'Помощь',
     'menu_help' : 'Помощь',
+    'menu_param' : 'Параметры',
     'menu_file' : 'Файл',
     'menu_clear' : 'Очистить',
     'menu_undo' : 'Отменить',

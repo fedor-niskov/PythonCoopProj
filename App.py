@@ -84,8 +84,11 @@ class App(Tk):
         # добавляем главное меню
         self.main_menu = Menu(self)
 
+        # здесь несколько вложенных меню для разных параметров
+        self.param_menu = Menu(self.main_menu)
+
         # меню выбора фигуры
-        self.brush_style = Menu(self.main_menu)
+        self.brush_style = Menu(self.param_menu)
         self.brush_style.add_command(label=Dict['brush_style_circle'],
                                 command=lambda: self.canv.set_style('circle'))
         self.brush_style.add_command(label=Dict['brush_style_square'],
@@ -94,7 +97,7 @@ class App(Tk):
                                 command=lambda: self.canv.set_style('triangle'))
 
         # меню выбора цвета
-        self.palette_choice = Menu(self.main_menu)
+        self.palette_choice = Menu(self.param_menu)
         self.palette_choice.add_command(label=Dict['palette_menu_random'],
                                         command=lambda: self.canv.color.define_palette(-1))
         self.palette_choice.add_command(label=Dict['palette_menu_gradual'],
@@ -109,7 +112,7 @@ class App(Tk):
                                         command=lambda: self.canv.color.define_palette(3))
 
         # меню выбора масштабирования
-        self.scale_choice = Menu(self.main_menu)
+        self.scale_choice = Menu(self.param_menu)
         self.scale_choice.add_command(
             label=Dict['scale_menu_const'],
             command=lambda: self.canv.set_scale_function('constant'))
@@ -135,6 +138,13 @@ class App(Tk):
             label=Dict['func_menu_heart'],
             command=lambda: self.canv.heart(2))
 
+        # объединение параметрических меню
+        self.param_menu.add_cascade(label=Dict['menu_brush'], menu=self.brush_style)
+        self.param_menu.add_cascade(label=Dict['menu_scale'], menu=self.scale_choice)
+        self.param_menu.add_cascade(label=Dict['menu_palette'], menu=self.palette_choice)
+        self.param_menu.add_command(label=Dict['menu_size'], command=self.select_fig_size)
+        self.param_menu.add_command(label=Dict['menu_symm'], command=self.select_num_symm)
+
         # меню работы с файлами
         self.file_menu = Menu(self.main_menu)
         self.file_menu.add_command(
@@ -146,21 +156,15 @@ class App(Tk):
         self.file_menu.add_command(
             label=Dict['file_menu_save_pic'],
             command=self.canv.save_to_png)
-        self.file_menu.add_command(
-            label=Dict['menu_help'],
-            command=self.open_help)
 
         # добавляем кнопки и менюшки
+        self.main_menu.add_command(label=Dict['menu_help'], command=self.open_help)
         self.main_menu.add_cascade(label=Dict['menu_file'], menu=self.file_menu)
-        self.main_menu.add_command(label=Dict['menu_clear'], command=self.canv.cleanup)
+        self.main_menu.add_cascade(label=Dict['menu_param'], menu=self.param_menu)
         self.main_menu.add_command(label=Dict['menu_undo'], command=self.canv.undo)
         self.main_menu.add_command(label=Dict['menu_redo'], command=self.canv.redo)
         self.main_menu.add_cascade(label=Dict['menu_func'], menu=self.func_choice)
-        self.main_menu.add_cascade(label=Dict['menu_brush'], menu=self.brush_style)
-        self.main_menu.add_cascade(label=Dict['menu_scale'], menu=self.scale_choice)
-        self.main_menu.add_cascade(label=Dict['menu_palette'], menu=self.palette_choice)
-        self.main_menu.add_command(label=Dict['menu_size'], command=self.select_fig_size)
-        self.main_menu.add_command(label=Dict['menu_symm'], command=self.select_num_symm)
+        self.main_menu.add_command(label=Dict['menu_clear'], command=self.canv.cleanup)
         self.config(menu=self.main_menu)
 
         # центрируем окно по центру экрана

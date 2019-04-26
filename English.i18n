@@ -22,6 +22,7 @@
     'file_menu_save_pic' : 'Save picture...',
     'help_window_title' : 'Help',
     'menu_help' : 'Help',
+    'menu_param' : 'Parameters',
     'menu_file' : 'File',
     'menu_clear' : 'Clear',
     'menu_undo' : 'Undo',
